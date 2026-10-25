@@ -1,8 +1,12 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src https://cgcplqcngpslommukoxd.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"><title>Energy Broker — Accesso riservato</title><style>
-:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center}.shell{width:min(100%,640px)}.panel{border:1px solid #334155;border-radius:18px;background:#192538;padding:24px;box-shadow:0 16px 45px #0003}h1{font-size:1.7rem;margin:0 0 6px}.muted{color:#aabbd2}label{display:block;margin:18px 0 6px;font-size:.9rem}input{width:100%;border:1px solid #52647b;background:#0d1726;color:white;padding:13px;border-radius:10px;font-size:1rem}button{border:0;border-radius:10px;background:#4f95e9;color:#071321;padding:12px 17px;font-size:1rem;font-weight:650;cursor:pointer;margin-top:17px}button.secondary{background:#2d3c52;color:#f1f5f9}button:disabled{opacity:.6;cursor:wait}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.hidden{display:none!important}.status{min-height:24px;margin-top:14px;white-space:pre-wrap}.error{color:#ffb5b5}.good{color:#a4e7bd}.section{margin-top:22px}.item{padding:12px 0;border-top:1px solid #35455b}.tag{font-size:.75rem;background:#30425a;border-radius:20px;padding:4px 8px}.small{font-size:.85rem}.notice{border-left:3px solid #f4c16a;padding-left:12px;margin-top:20px;color:#e7d6aa}</style></head><body><main class="shell"><section class="panel"><div class="row"><div><h1>Energy Broker</h1><div class="muted">Area riservata · Archivio privato</div></div><span class="tag">Versione protetta 0.2 · Test sicurezza</span></div>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center}.shell{width:min(100%,640px)}.panel{border:1px solid #334155;border-radius:18px;background:#192538;padding:24px;box-shadow:0 16px 45px #0003}h1{font-size:1.7rem;margin:0 0 6px}.muted{color:#aabbd2}label{display:block;margin:18px 0 6px;font-size:.9rem}input{width:100%;border:1px solid #52647b;background:#0d1726;color:white;padding:13px;border-radius:10px;font-size:1rem}button{border:0;border-radius:10px;background:#4f95e9;color:#071321;padding:12px 17px;font-size:1rem;font-weight:650;cursor:pointer;margin-top:17px}button.secondary{background:#2d3c52;color:#f1f5f9}button:disabled{opacity:.6;cursor:wait}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.hidden{display:none!important}.status{min-height:24px;margin-top:14px;white-space:pre-wrap}.error{color:#ffb5b5}.good{color:#a4e7bd}.section{margin-top:22px}.item{padding:12px 0;border-top:1px solid #35455b}.tag{font-size:.75rem;background:#30425a;border-radius:20px;padding:4px 8px}.small{font-size:.85rem}.notice{border-left:3px solid #f4c16a;padding-left:12px;margin-top:20px;color:#e7d6aa}</style></head><body><main class="shell"><section class="panel"><div class="row"><div><h1>Energy Broker</h1><div class="muted">Area riservata · Archivio privato</div></div><span class="tag">Versione protetta 0.3 · Test archivio</span></div>
 <div id="login"><form id="loginForm"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required placeholder="nome@esempio.it"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="6"><button id="loginButton" type="submit">Accedi</button></form><div id="loginStatus" class="status" role="status" aria-live="polite"></div><p class="muted small">Utilizza le credenziali dell'utente creato in Supabase Authentication. Non inserire qui le credenziali amministrative di Supabase.</p></div>
-<div id="app" class="hidden"><div class="row section"><div><strong id="who"></strong><div class="good small">Account autorizzato</div></div><button id="logout" class="secondary">Esci</button></div><div class="section"><h2>Fornitori</h2><div id="suppliers" class="muted">Caricamento…</div></div><div class="section"><h2>Offerte</h2><div id="offers" class="muted">Caricamento…</div></div><div class="notice small">Archivio inizialmente vuoto. Le funzioni di importazione CTE, provvigioni e documenti saranno aggiunte solo dopo i test di sicurezza.</div><button id="refresh" class="secondary">Aggiorna dati</button><div class="section"><h2>Test sicurezza</h2><p class="muted small">Non utilizza né carica dati personali. Verifica le autorizzazioni dell’API e dell’archivio privato.</p><button id="securityTest" class="secondary">Esegui test</button><div id="securityResults" class="status" role="status" aria-live="polite"></div></div><div id="appStatus" class="status" role="status" aria-live="polite"></div></div></section></main>
+<div id="app" class="hidden"><div class="row section"><div><strong id="who"></strong><div class="good small">Account autorizzato</div></div><button id="logout" class="secondary">Esci</button></div><div class="section"><h2>Fornitori</h2><div id="suppliers" class="muted">Caricamento…</div></div><div class="section"><h2>Offerte</h2><div id="offers" class="muted">Caricamento…</div></div><div class="notice small">Archivio inizialmente vuoto. Le funzioni di importazione CTE, provvigioni e documenti saranno aggiunte solo dopo i test di sicurezza.</div><button id="refresh" class="secondary">Aggiorna dati</button><div class="section"><h2>Test sicurezza</h2><p class="muted small">Non utilizza né carica dati personali. Verifica le autorizzazioni dell’API e dell’archivio privato.</p><button id="securityTest" class="secondary">Esegui test</button><div id="securityResults" class="status" role="status" aria-live="polite"></div></div><div class="section"><h2>Test archivio privato</h2>
+<p class="muted small">Crea un piccolo file fittizio, verifica che il tuo account possa leggerlo e che un visitatore anonimo non possa farlo. Alla fine elimina automaticamente il file di prova.</p>
+<button id="storageTest" class="secondary">Verifica archivio privato</button>
+<div id="storageResults" class="status" role="status" aria-live="polite"></div></div>
+<div id="appStatus" class="status" role="status" aria-live="polite"></div></div></section></main>
 <script>
 'use strict';
 const API='https://cgcplqcngpslommukoxd.supabase.co';
@@ -43,4 +47,45 @@ async function runSecurityTests(){
 }
 $('securityTest').addEventListener('click',runSecurityTests);
 
+
+async function testStorage(){
+ const btn=$('storageTest');btn.disabled=true;
+ const root=$('storageResults');root.replaceChildren();
+ const add=(pass,label,details)=>{
+   const p=document.createElement('p');
+   p.className=(pass?'good':'error')+' small';
+   p.textContent=(pass?'✓ ':'✗ ')+label+' — '+details;
+   root.append(p);
+ };
+ const path='security-tests/temporary-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.txt';
+ const objectPath='/storage/v1/object/broker-private/'+path;
+ const body='ENERGY BROKER - FILE FITTIZIO DI COLLAUDO - NON CONTIENE DATI PERSONALI';
+ let uploaded=false;
+ const anonHeaders={'apikey':KEY,'Authorization':'Bearer '+KEY};
+ try{
+   const upload=await fetch(API+objectPath,{method:'POST',headers:{...headers(),'Content-Type':'text/plain','x-upsert':'false'},body,cache:'no-store'});
+   uploaded=upload.ok;
+   add(upload.ok,'Caricamento file fittizio', 'HTTP '+upload.status);
+   if(!upload.ok)throw Error('Impossibile creare il file di prova. Nessun dato reale caricato.');
+   const owner=await fetch(API+objectPath,{headers:headers(),cache:'no-store'});
+   const ownerText=owner.ok?await owner.text():'';
+   add(owner.ok&&ownerText===body,'Lettura da account autorizzato','HTTP '+owner.status);
+   const anonymous=await fetch(API+objectPath,{headers:anonHeaders,cache:'no-store'});
+   add(!anonymous.ok,'Lettura anonima negata','HTTP '+anonymous.status);
+   const publicUrl=await fetch(API+'/storage/v1/object/public/broker-private/'+path,{headers:anonHeaders,cache:'no-store'});
+   add(!publicUrl.ok,'URL pubblico non accessibile','HTTP '+publicUrl.status);
+ }catch(e){add(false,'Errore durante il test',e.message||'Errore di rete')}
+ finally{
+   if(uploaded){
+     try{
+       const del=await fetch(API+objectPath,{method:'DELETE',headers:headers(),cache:'no-store'});
+       add(del.ok,'Eliminazione file fittizio','HTTP '+del.status+(del.ok?' · file rimosso':' · verificare manualmente'));
+     }catch(e){add(false,'Eliminazione file fittizio','Non riuscita: '+e.message)}
+   }
+   const p=document.createElement('p');p.className='muted small';
+   p.textContent='Questo è un collaudo con un file fittizio. Non caricare documenti personali finché non avremo esaminato i risultati.';
+   root.append(p);btn.disabled=false;
+ }
+}
+$('storageTest').addEventListener('click',testStorage);
 </script></body></html>
