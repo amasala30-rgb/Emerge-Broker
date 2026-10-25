@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src https://cgcplqcngpslommukoxd.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"><title>Energy Broker — Accesso riservato</title><style>
-:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center}.shell{width:min(100%,640px)}.panel{border:1px solid #334155;border-radius:18px;background:#192538;padding:24px;box-shadow:0 16px 45px #0003}h1{font-size:1.7rem;margin:0 0 6px}.muted{color:#aabbd2}label{display:block;margin:18px 0 6px;font-size:.9rem}input,select,textarea{width:100%;border:1px solid #52647b;background:#0d1726;color:white;padding:13px;border-radius:10px;font-size:1rem}button{border:0;border-radius:10px;background:#4f95e9;color:#071321;padding:12px 17px;font-size:1rem;font-weight:650;cursor:pointer;margin-top:17px}button.secondary{background:#2d3c52;color:#f1f5f9}button:disabled{opacity:.6;cursor:wait}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.hidden{display:none!important}.status{min-height:24px;margin-top:14px;white-space:pre-wrap}.error{color:#ffb5b5}.good{color:#a4e7bd}.section{margin-top:22px}.item{padding:12px 0;border-top:1px solid #35455b}.tag{font-size:.75rem;background:#30425a;border-radius:20px;padding:4px 8px}.small{font-size:.85rem}.notice{border-left:3px solid #f4c16a;padding-left:12px;margin-top:20px;color:#e7d6aa}</style></head><body><main class="shell"><section class="panel"><div class="row"><div><h1>Energy Broker</h1><div class="muted">Area riservata · Archivio privato</div></div><span class="tag">Versione protetta 0.6 · CTE protette</span></div>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center}.shell{width:min(100%,640px)}.panel{border:1px solid #334155;border-radius:18px;background:#192538;padding:24px;box-shadow:0 16px 45px #0003}h1{font-size:1.7rem;margin:0 0 6px}.muted{color:#aabbd2}label{display:block;margin:18px 0 6px;font-size:.9rem}input,select,textarea{width:100%;border:1px solid #52647b;background:#0d1726;color:white;padding:13px;border-radius:10px;font-size:1rem}button{border:0;border-radius:10px;background:#4f95e9;color:#071321;padding:12px 17px;font-size:1rem;font-weight:650;cursor:pointer;margin-top:17px}button.secondary{background:#2d3c52;color:#f1f5f9}button:disabled{opacity:.6;cursor:wait}.row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.hidden{display:none!important}.status{min-height:24px;margin-top:14px;white-space:pre-wrap}.error{color:#ffb5b5}.good{color:#a4e7bd}.section{margin-top:22px}.item{padding:12px 0;border-top:1px solid #35455b}.tag{font-size:.75rem;background:#30425a;border-radius:20px;padding:4px 8px}.small{font-size:.85rem}summary{cursor:pointer;font-size:1.15rem;font-weight:700;padding:12px 0}details[open]{padding-bottom:12px;border-bottom:1px solid #35455b}.notice{border-left:3px solid #f4c16a;padding-left:12px;margin-top:20px;color:#e7d6aa}</style></head><body><main class="shell"><section class="panel"><div class="row"><div><h1>Energy Broker</h1><div class="muted">Area riservata · Archivio privato</div></div><span class="tag">Versione protetta 0.7 · Filtri fornitori</span></div>
 <div id="login"><form id="loginForm"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required placeholder="nome@esempio.it"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="6"><button id="loginButton" type="submit">Accedi</button></form><div id="loginStatus" class="status" role="status" aria-live="polite"></div><p class="muted small">Utilizza le credenziali dell'utente creato in Supabase Authentication. Non inserire qui le credenziali amministrative di Supabase.</p></div>
-<div id="app" class="hidden"><div class="row section"><div><strong id="who"></strong><div class="good small">Account autorizzato</div></div><button id="logout" class="secondary">Esci</button></div><div class="section"><h2>Fornitori</h2><div id="suppliers" class="muted">Caricamento…</div></div><div class="section"><h3>Aggiungi fornitore</h3>
+<div id="app" class="hidden"><div class="row section"><div><strong id="who"></strong><div class="good small">Account autorizzato</div></div><button id="logout" class="secondary">Esci</button></div><details class="section"><summary>Fornitori · elenco e gestione</summary><div id="suppliers" class="muted">Caricamento…</div><h3>Aggiungi fornitore</h3>
 <form id="supplierForm"><label for="supplierName">Nome del fornitore</label>
 <input id="supplierName" required maxlength="120" placeholder="Es. Nome fornitore">
 <button type="submit">Salva nel database privato</button></form>
-<div id="supplierStatus" class="status" role="status"></div></div>
-<div class="section"><h2>Offerte</h2><div id="offers" class="muted">Caricamento…</div></div><div class="section"><h3>Aggiungi offerta (scheda preliminare)</h3>
+<div id="supplierStatus" class="status" role="status"></div></details>
+<details class="section"><summary>Elenco completo delle offerte</summary><div id="offers" class="muted">Caricamento…</div></details><details class="section"><summary>Aggiungi offerta (scheda preliminare)</summary>
 <form id="offerForm">
 <label for="offerSupplier">Fornitore</label><select id="offerSupplier" required></select>
 <label for="offerName">Nome offerta</label><input id="offerName" required maxlength="180">
@@ -17,11 +17,11 @@
 <label for="offerStatus">Stato della CTE</label><select id="offerStatus"><option value="unverified">Non verificata</option><option value="to_confirm">Da confermare</option><option value="verified">Verificata</option><option value="superseded">Superata</option><option value="withdrawn">Ritirata</option></select>
 <button type="submit">Salva scheda offerta</button>
 </form><div id="offerStatusMessage" class="status" role="status"></div>
-<p class="muted small">Le nuove offerte nascono senza prezzi verificati. Inserisci le condizioni nella sezione successiva.</p></div>
+<p class="muted small">Le nuove offerte nascono senza prezzi verificati. Inserisci le condizioni nella sezione successiva.</p></details>
 <div class="section"><h2>Condizioni economiche CTE</h2>
 <p class="muted small">I dati sono salvati nel campo riservato <code>terms</code> di Supabase. I valori importati vengono mostrati automaticamente. I campi non modificati restano invariati; i dati aggiuntivi della CTE sono conservati. Non utilizzare questa schermata per preventivi definitivi.</p>
 <form id="termsForm">
-<label for="termsOffer">Offerta da aggiornare</label><select id="termsOffer" required></select>
+<label for="termsSupplier">Seleziona fornitore</label><select id="termsSupplier" required></select><label for="termsOffer">CTE del fornitore selezionato</label><select id="termsOffer" required></select><p id="termsEmpty" class="muted small hidden">Non ci sono ancora CTE registrate per questo fornitore.</p>
 <div id="termsSummary" class="notice small" aria-live="polite">Seleziona una CTE per vedere i valori già presenti.</div>
 <label for="termsSpread">Spread su indice (€/kWh luce oppure €/Smc gas)</label><input id="termsSpread" type="number" min="0" step="any" inputmode="decimal" placeholder="Es. 0.014">
 <label for="termsFixedPrice">Prezzo fisso energia (€/kWh luce oppure €/Smc gas)</label><input id="termsFixedPrice" type="number" min="0" step="any" inputmode="decimal" placeholder="Solo se applicabile">
@@ -48,7 +48,7 @@ let accessToken=null, expiryTimer=null;
 const $=id=>document.getElementById(id);
 const headers=()=>({'apikey':KEY,'Authorization':'Bearer '+accessToken});
 function status(id,msg,error=false){const el=$(id);el.textContent=msg;el.className='status '+(error?'error':'good')}
-function reset(){accessToken=null;clearTimeout(expiryTimer);$('password').value='';$('login').classList.remove('hidden');$('app').classList.add('hidden');$('who').textContent='';$('suppliers').replaceChildren();$('offers').replaceChildren()}
+function reset(){currentOffers=[];currentSuppliers=[];accessToken=null;clearTimeout(expiryTimer);$('password').value='';$('login').classList.remove('hidden');$('app').classList.add('hidden');$('who').textContent='';$('suppliers').replaceChildren();$('offers').replaceChildren()}
 function logout(msg){reset();if(msg)status('loginStatus',msg)}
 async function api(path){const r=await fetch(API+path,{headers:headers(),cache:'no-store'});if(r.status===401||r.status===403){logout('Sessione scaduta o accesso non autorizzato.');throw Error('Accesso non autorizzato')}if(!r.ok)throw Error('Richiesta non riuscita ('+r.status+')');return r.json()}
 function displayList(id,items,render){const root=$(id);root.replaceChildren();if(!items.length){root.textContent='Nessun elemento presente.';return}for(const item of items){const el=document.createElement('div');el.className='item';el.textContent=render(item);root.append(el)}}
@@ -56,7 +56,7 @@ async function saveRow(table,payload){
  const res=await fetch(API+'/rest/v1/'+table,{method:'POST',headers:{...headers(),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(payload),cache:'no-store'});
  if(!res.ok){let reason='HTTP '+res.status;try{const error=await res.json();reason=error.message||reason}catch{}throw Error(reason)}
 }
-let currentOffers=[];
+let currentOffers=[];let currentSuppliers=[];
 let initialTermsForm=null;
 const formIds=['termsSpread','termsFixedPrice','termsAnnual','termsIndex','termsFrom','termsUntil','termsNotes','termsStatus'];
 const getForm=()=>Object.fromEntries(formIds.map(id=>[id,$(id).value]));
@@ -84,6 +84,28 @@ function loadTerms(){
  status('termsMessage','');
 }
 $('termsOffer').addEventListener('change',loadTerms);
+$('termsSupplier').addEventListener('change',()=>filterTermsBySupplier());
+function filterTermsBySupplier(preserveId=''){
+ const supplierId=$('termsSupplier').value;
+ const offers=currentOffers.filter(o=>o.supplier_id===supplierId);
+ const selector=$('termsOffer');
+ selector.replaceChildren();
+ for(const offer of offers){
+  const option=document.createElement('option');option.value=offer.id;
+  option.textContent=offer.name+' · '+(offer.commodity==='electricity'?'Luce':'Gas');
+  selector.append(option);
+ }
+ if(preserveId&&offers.some(o=>o.id===preserveId))selector.value=preserveId;
+ $('termsEmpty').classList.toggle('hidden',offers.length>0);
+ const submit=$('termsForm').querySelector('button[type=submit]');
+ submit.disabled=offers.length===0;
+ for(const id of formIds)$(id).disabled=offers.length===0;
+ if(offers.length){loadTerms()}else{
+  for(const id of formIds)$(id).value='';
+  $('termsSummary').textContent='Nessuna CTE disponibile per questo fornitore.';
+  initialTermsForm=null;status('termsMessage','');
+ }
+}
 $('termsForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=e.submitter;btn.disabled=true;
  try{
@@ -142,18 +164,34 @@ $('offerForm').addEventListener('submit',async e=>{
  try{await saveRow('offers',{supplier_id:$('offerSupplier').value,name:$('offerName').value.trim(),commodity:$('commodity').value,segment:$('segment').value,pricing:$('pricing').value,status:$('offerStatus').value});$('offerName').value='';status('offerStatusMessage','Scheda offerta salvata.');await refresh()}
  catch(err){status('offerStatusMessage','Salvataggio non riuscito: '+err.message,true)}finally{btn.disabled=false}
 });
-async function refresh(){status('appStatus','');try{const [suppliers,offers]=await Promise.all([api('/rest/v1/suppliers?select=id,name&order=name.asc&limit=100'),api('/rest/v1/offers?select=id,name,commodity,segment,status,terms,valid_from,valid_until&order=name.asc&limit=100')]);displayList('suppliers',suppliers,x=>x.name);
- const selector=$('offerSupplier');const previous=selector.value;selector.replaceChildren();
- for(const item of suppliers){const option=document.createElement('option');option.value=item.id;option.textContent=item.name;selector.append(option)}
- if(suppliers.some(x=>x.id===previous))selector.value=previous;
- $('offerForm').querySelector('button[type=submit]').disabled=!suppliers.length;
- currentOffers=offers;
- const termSelect=$('termsOffer'),selectedOffer=termSelect.value;termSelect.replaceChildren();
- for(const item of offers){const opt=document.createElement('option');opt.value=item.id;opt.textContent=item.name+' · '+item.commodity;termSelect.append(opt)}
- if(offers.some(x=>x.id===selectedOffer))termSelect.value=selectedOffer;
- $('termsForm').querySelector('button[type=submit]').disabled=!offers.length;
- loadTerms();
- displayList('offers',offers,x=>x.name+' · '+x.commodity+' · '+x.segment+' · '+x.status+(x.terms&&Object.keys(x.terms).length?' · condizioni registrate':''))}catch(e){status('appStatus','Impossibile caricare i dati: '+e.message,true)}}
+async function refresh(){
+ status('appStatus','');
+ try{
+  const [suppliers,offers]=await Promise.all([
+   api('/rest/v1/suppliers?select=id,name&order=name.asc&limit=100'),
+   api('/rest/v1/offers?select=id,supplier_id,name,commodity,segment,status,terms,valid_from,valid_until&order=name.asc&limit=500')
+  ]);
+  currentSuppliers=suppliers;currentOffers=offers;
+  displayList('suppliers',suppliers,x=>x.name);
+  const newSupplier=$('offerSupplier'),priorNew=newSupplier.value;
+  newSupplier.replaceChildren();
+  for(const supplier of suppliers){
+   const option=document.createElement('option');option.value=supplier.id;option.textContent=supplier.name;newSupplier.append(option);
+  }
+  if(suppliers.some(s=>s.id===priorNew))newSupplier.value=priorNew;
+  $('offerForm').querySelector('button[type=submit]').disabled=!suppliers.length;
+  const supplierSelect=$('termsSupplier'),priorSupplier=supplierSelect.value,priorOffer=$('termsOffer').value;
+  supplierSelect.replaceChildren();
+  for(const supplier of suppliers){
+   const option=document.createElement('option');option.value=supplier.id;option.textContent=supplier.name;supplierSelect.append(option);
+  }
+  if(suppliers.some(s=>s.id===priorSupplier))supplierSelect.value=priorSupplier;
+  else if(suppliers.some(s=>s.id===priorNew))supplierSelect.value=priorNew;
+  filterTermsBySupplier(priorOffer);
+  const supplierNames=Object.fromEntries(suppliers.map(s=>[s.id,s.name]));
+  displayList('offers',offers,x=>(supplierNames[x.supplier_id]||'Fornitore sconosciuto')+' · '+x.name+' · '+x.commodity+' · '+x.status);
+ }catch(e){status('appStatus','Impossibile caricare i dati: '+e.message,true)}
+}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('loginButton');btn.disabled=true;status('loginStatus','Verifica credenziali…');try{const r=await fetch(API+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value.trim(),password:$('password').value}),cache:'no-store'});const data=await r.json();if(!r.ok||!data.access_token)throw Error('Email o password non valide.');accessToken=data.access_token;$('password').value='';const check=await fetch(API+'/rest/v1/rpc/is_broker_owner',{method:'POST',headers:{...headers(),'Content-Type':'application/json'},body:'{}',cache:'no-store'});if(!check.ok||await check.json()!==true)throw Error('Questo account non è autorizzato.');$('who').textContent=$('email').value.trim();$('login').classList.add('hidden');$('app').classList.remove('hidden');expiryTimer=setTimeout(()=>logout('Sessione scaduta. Accedi nuovamente.'),Math.max(1,Number(data.expires_in||3600)-60)*1000);await refresh()}catch(err){reset();status('loginStatus',err.message||'Errore di accesso.',true)}finally{btn.disabled=false}});
 $('logout').addEventListener('click',()=>logout('Disconnessione completata.'));
 $('refresh').addEventListener('click',refresh);
