@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src https://cgcplqcngpslommukoxd.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<title>Energy Broker 1.0</title>
+<style>:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;padding:20px;min-height:100vh;display:grid;place-items:center}.shell{width:min(100%,680px)}.panel{background:#192538;border:1px solid #334155;border-radius:18px;padding:22px}h1{margin:0}h2{font-size:1.2rem}label{display:block;margin:14px 0 5px}input,select,textarea{width:100%;padding:12px;border-radius:9px;background:#0d1726;color:#fff;border:1px solid #52647b;font-size:1rem}button{border:0;border-radius:9px;background:#4f95e9;color:#071321;padding:12px 16px;margin-top:15px;font-size:1rem;font-weight:650}button:disabled{opacity:.5}.secondary{background:#304158;color:white}.muted{color:#aabbd2}.small{font-size:.87rem}.hidden{display:none!important}.section{margin-top:24px}.notice{border-left:3px solid #f4c16a;padding:10px 12px;color:#e7d6aa;background:#252d3b}.item{padding:10px 0;border-top:1px solid #35455b}.good{color:#a4e7bd}.error{color:#ffb5b5}.status{white-space:pre-wrap;margin-top:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}summary{padding:12px 0;font-weight:700;cursor:pointer}details{border-bottom:1px solid #35455b}code{font-size:.9em}</style></head>
+<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.0 · acquisizione bollette</span></div><p class="muted small">Area riservata · Archivio privato</p>
+<div id="login"><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button type="submit">Accedi</button></form><div id="loginStatus" class="status"></div></div>
+<div id="app" class="hidden"><div class="row"><strong id="who"></strong><button id="logout" class="secondary">Esci</button></div>
+<div class="section"><h2>Acquisisci bolletta</h2>
+<p class="muted small">Scatta una foto, scegli un'immagine dalla galleria oppure un PDF dai File. Il documento resta sul dispositivo finché non premi «Salva nell'archivio privato». L'OCR delle immagini viene eseguito nel browser con una libreria esterna; richiede connessione Internet per scaricare il motore, ma non invia la bolletta al servizio OCR.</p>
+<label>Fotografa la bolletta</label><input id="billCamera" type="file" accept="image/*" capture="environment">
+<label>Oppure scegli foto o PDF esistente</label><input id="billFile" type="file" accept="image/*,application/pdf">
+<div id="billSelected" class="muted small"></div>
+<button id="billRead" type="button">Leggi dati dal documento</button><div id="billOcrStatus" class="status" aria-live="polite"></div>
+<label>Fornitore attuale</label><input id="billSupplier" placeholder="Controlla e correggi">
+<label>POD / PDR</label><input id="billPoint" placeholder="Controlla e correggi">
+<label>Consumo annuo (kWh o Smc)</label><input id="billConsumption" type="number" min="0" step="any" inputmode="decimal">
+<label>Totale bolletta (€)</label><input id="billTotal" type="number" min="0" step="any" inputmode="decimal">
+<label>Periodo di riferimento</label><input id="billPeriod" placeholder="Controlla e correggi">
+<label>Testo letto (modificabile)</label><textarea id="billText" rows="5" placeholder="Il testo OCR comparirà qui. Puoi anche trascrivere manualmente i dati."></textarea>
+<button id="billUse" type="button" class="secondary">Usa il consumo nel confronto</button>
+<button id="billSave" type="button" class="secondary">Salva nell'archivio privato</button>
+<div id="billSaveStatus" class="status"></div>
+<p class="notice small">Controlla sempre i dati: una bolletta può riportare consumi del periodo, consumi annui stimati e importi non direttamente confrontabili. Il salvataggio conserva il documento originale nell'archivio privato; i campi trascritti restano in questa schermata.</p></div>
+<div class="section"><h2>Confronto offerte · anteprima</h2><p class="notice small">Simulazione della sola componente commerciale. Non è il totale della bolletta e non è un preventivo definitivo. Le CTE scadute, non verificate o incomplete vengono escluse.</p>
+<label>Fornitura</label><select id="compareCommodity"><option value="electricity">Luce</option><option value="gas">Gas</option></select>
+<label>Cliente</label><select id="compareSegment"><option value="domestic">Domestico</option><option value="business">Business</option><option value="condominium">Condominio</option></select>
+<label>Consumo annuo (kWh o Smc)</label><input id="compareConsumption" type="number" min="1" step="any" inputmode="decimal">
+<label>Valore indice del periodo (€/kWh o €/Smc)</label><input id="compareIndex" type="number" min="0" step="any" inputmode="decimal" placeholder="Richiesto per le offerte indicizzate">
+<label><input id="comparePreliminary" type="checkbox" style="width:auto"> Includi CTE da confermare (simulazione non verificata)</label><button id="compareRun">Verifica confrontabilità</button><div id="compareResults" class="status"></div></div>
+<details class="section"><summary>Fornitori · elenco e gestione</summary><div id="suppliers"></div><form id="supplierForm"><label>Nuovo fornitore</label><input id="supplierName" required maxlength="120"><button>Aggiungi fornitore</button></form><div id="supplierStatus" class="status"></div></details>
+<details class="section"><summary>Elenco completo offerte</summary><div id="offers"></div></details>
+<details class="section"><summary>Aggiungi offerta preliminare</summary><form id="offerForm"><label>Fornitore</label><select id="offerSupplier"></select><label>Nome offerta</label><input id="offerName" required maxlength="180"><label>Fornitura</label><select id="commodity"><option value="electricity">Luce</option><option value="gas">Gas</option></select><label>Cliente</label><select id="segment"><option value="domestic">Domestico</option><option value="business">Business</option><option value="condominium">Condominio</option></select><label>Prezzo</label><select id="pricing"><option value="indexed">Variabile</option><option value="fixed">Fisso</option><option value="mixed">Misto</option></select><button>Salva offerta non verificata</button></form><div id="offerStatusMessage" class="status"></div></details>
+<details class="section"><summary>Condizioni economiche CTE · consultazione e modifica</summary><p class="muted small">I dati vengono letti dal database privato. I valori non modificati sono conservati.</p><label>Fornitore</label><select id="termsSupplier"></select><label>Offerta</label><select id="termsOffer"></select><div id="termsSummary" class="notice small"></div>
+<form id="termsForm"><label>Spread unitario (€/kWh o €/Smc)</label><input id="termsSpread" type="number" min="0" step="any"><label>Prezzo fisso unitario</label><input id="termsFixedPrice" type="number" min="0" step="any"><label>Quota fissa €/anno</label><input id="termsAnnual" type="number" min="0" step="any"><label>Indice (scrivere la formula esatta)</label><input id="termsIndex" maxlength="200"><label>Valida dal</label><input id="termsFrom" type="date"><label>Valida fino al</label><input id="termsUntil" type="date"><label>Note</label><textarea id="termsNotes" rows="3"></textarea><label>Stato</label><select id="termsStatus"><option value="unverified">Non verificata</option><option value="to_confirm">Da confermare</option><option value="verified">Verificata sul documento</option><option value="superseded">Superata</option><option value="withdrawn">Ritirata</option></select><button>Salva solo modifiche</button></form><div id="termsMessage" class="status"></div></details>
+<button id="refresh" class="secondary">Aggiorna dati</button>
+<details class="section"><summary>Test sicurezza</summary><p class="muted small">Controlla le autorizzazioni API senza dati personali.</p><button id="securityTest" class="secondary">Esegui test</button><div id="securityResults" class="status"></div><p class="muted small">L'archivio privato non viene modificato durante questo controllo.</p></details>
+<div id="appStatus" class="status"></div></div></section></main>
+<script>
+'use strict';
+const API='https://cgcplqcngpslommukoxd.supabase.co',KEY='sb_publishable_cVgOKK01GgnRFmaw0pAvew_JWfMW2ju';
+const $=id=>document.getElementById(id);
+
+let billAttachment=null;
+function selectBill(file){
+ if(!file)return;
+ if(!(/^image\//.test(file.type)||file.type==='application/pdf')){message('billOcrStatus','Formato non supportato',true);return}
+ if(file.size>12*1024*1024){message('billOcrStatus','File troppo grande (massimo 12 MB)',true);return}
+ billAttachment=file;
+ $('billSelected').textContent='Selezionato: '+file.name+' ('+(file.size/1024/1024).toFixed(1)+' MB)';
+ message('billOcrStatus','Documento pronto. Nessun file è stato inviato.');
+}
+$('billCamera').onchange=e=>selectBill(e.target.files[0]);
+$('billFile').onchange=e=>selectBill(e.target.files[0]);
+function loadLibrary(src){
+ return new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(Error('Impossibile caricare il modulo di lettura'));document.head.append(script);
+ });
+}
+function billExtract(text){
+ $('billText').value=text;
+ const upper=text.toUpperCase();
+ const point=upper.match(/\b(?:IT[0-9]{3}E[0-9A-Z]{8}|IT[0-9]{2}[0-9]{12,14})\b/);
+ if(point)$('billPoint').value=point[0];
+ const annual=text.match(/(?:consumo\s+annuo|consumi\s+annui|consumo\s+ultimi\s+12\s+mesi)[^\d]{0,50}([\d.,\s]{2,12})\s*(?:kWh|Smc)/i);
+ if(annual){const raw=annual[1].replace(/\s/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');if(Number.isFinite(Number(raw)))$('billConsumption').value=Number(raw)}
+ const amount=text.match(/(?:totale\s+(?:da\s+pagare|bolletta|fattura)|importo\s+da\s+pagare)[^\d€]{0,35}€?\s*([\d.]+,\d{2})/i);
+ if(amount)$('billTotal').value=Number(amount[1].replace(/\./g,'').replace(',','.'));
+}
+$('billRead').onclick=async()=>{
+ if(!billAttachment){message('billOcrStatus','Seleziona prima un documento',true);return}
+ const button=$('billRead');button.disabled=true;message('billOcrStatus','Lettura in corso…');
+ try{
+  let text='';
+  if(billAttachment.type==='application/pdf'){
+   if(!window.pdfjsLib)await loadLibrary('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+   const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await billAttachment.arrayBuffer())}).promise;
+   for(let n=1;n<=Math.min(pdf.numPages,10);n++){const page=await pdf.getPage(n);const content=await page.getTextContent();text+=content.items.map(i=>i.str).join(' ')+'\n'}
+   if(!text.trim())throw Error('PDF composto da immagini: usa una foto della pagina per la lettura OCR oppure inserisci i dati manualmente.');
+  }else{
+   if(!window.Tesseract)await loadLibrary('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+   const result=await Tesseract.recognize(billAttachment,'ita+eng',{logger:m=>{if(m.status==='recognizing text')message('billOcrStatus','Lettura '+Math.round(m.progress*100)+'%')}});
+   text=result.data.text;
+  }
+  billExtract(text);
+  message('billOcrStatus',text.trim()?'Lettura completata: verifica tutti i dati estratti.':'Nessun testo riconosciuto: inserisci i dati manualmente.',!text.trim());
+ }catch(err){message('billOcrStatus','Lettura non riuscita: '+err.message+'. Puoi inserire i dati manualmente.',true)}
+ finally{button.disabled=false}
+};
+$('billUse').onclick=()=>{
+ const value=Number($('billConsumption').value);
+ if(!Number.isFinite(value)||value<=0){message('billSaveStatus','Inserisci prima un consumo annuo valido',true);return}
+ $('compareConsumption').value=value;
+ message('billSaveStatus','Consumo trasferito al confronto. Seleziona anche Luce o Gas.');
+};
+$('billSave').onclick=async()=>{
+ if(!billAttachment){message('billSaveStatus','Seleziona un file da salvare',true);return}
+ if(!confirm('Salvare il documento originale nell’archivio privato Supabase?'))return;
+ const button=$('billSave');button.disabled=true;
+ try{
+  const suffix=(billAttachment.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);
+  const name='bills/'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+suffix;
+  const r=await fetch(API+'/storage/v1/object/broker-private/'+name,{method:'POST',headers:{...auth(),'Content-Type':billAttachment.type||'application/octet-stream','x-upsert':'false'},body:billAttachment,cache:'no-store'});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw Error(e.message||'HTTP '+r.status)}
+  message('billSaveStatus','Documento salvato nell’archivio privato. Percorso: '+name+'. I dati OCR non sono stati registrati come anagrafica cliente.');
+ }catch(e){message('billSaveStatus','Salvataggio non riuscito: '+e.message,true)}
+ finally{button.disabled=false}
+};
+
+let token=null,timer=null,offers=[],suppliers=[],baseline=null;
+const auth=()=>({'apikey':KEY,'Authorization':'Bearer '+token});
+function message(id,txt,bad=false){$(id).textContent=txt;$(id).className='status '+(bad?'error':'good')}
+function reset(){token=null;clearTimeout(timer);offers=[];suppliers=[];$('password').value='';$('app').classList.add('hidden');$('login').classList.remove('hidden')}
+async function api(path){let r=await fetch(API+path,{headers:auth(),cache:'no-store'});if(r.status===401||r.status===403){reset();throw Error('Accesso non autorizzato o sessione scaduta')}if(!r.ok)throw Error('HTTP '+r.status);return r.json()}
+async function write(table,method,payload,id=''){let r=await fetch(API+'/rest/v1/'+table+(id?'?id=eq.'+encodeURIComponent(id):''),{method,headers:{...auth(),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(payload),cache:'no-store'});if(!r.ok){let e=await r.json().catch(()=>({}));throw Error(e.message||'HTTP '+r.status)}}
+function list(id,rows,fn){$(id).replaceChildren();for(const row of rows){const p=document.createElement('div');p.className='item';p.textContent=fn(row);$(id).append(p)}if(!rows.length)$(id).textContent='Nessun elemento'}
+function options(id,rows,label,keep){$(id).replaceChildren();for(const x of rows){let o=document.createElement('option');o.value=x.id;o.textContent=label(x);$(id).append(o)}if(rows.some(x=>x.id===keep))$(id).value=keep}
+function eligibility(o){
+ const t=o.terms||{},today=new Date().toISOString().slice(0,10);
+ if(o.status!=='verified' && !(o.status==='to_confirm' && $('comparePreliminary').checked))return 'CTE non verificata';
+ if(!o.valid_until)return 'Scadenza assente';
+ if(o.valid_until<today)return 'CTE scaduta';
+ if(o.valid_from&&o.valid_from>today)return 'Validità futura';
+ if(t.historical_only||t.expired||t.spread_to_be_filled)return 'CTE storica o incompleta';
+ if(t.additional_charges_require_review||t.requires_full_terms_review||t.additional_charges||t.free4you_eur_year!==undefined||t.summary_prices_not_necessarily_commodity_only||t.network_losses||t.losses_bt||t.losses_mt||t.discounts_conditional||t.cap_formula||t.cap_eur_kwh!==undefined)return 'Formula o costi da verificare';
+ if(o.pricing==='indexed'){
+  if(!t.index)return 'Indice assente';
+  if(!/^(PUN|PSV|TTF)(?:$|[\s_-])/i.test(t.index)||/MGP|PUNi|PSVDAm|month ahead|hourly/i.test(t.index))return 'Formula indice specifica';
+  if(/fasce|F1|F2|F3|orari|hour|biorar/i.test(t.index))return 'Servono consumi per fascia';
+  if(t.index_multiplier!==undefined&&Number(t.index_multiplier)!==1)return 'Formula complessa';
+  if((t.spread_eur_kwh??t.spread_eur_smc??t.spread)==null||!Number.isFinite(Number(t.spread_eur_kwh??t.spread_eur_smc??t.spread)))return 'Spread mancante';
+ }else if(o.pricing==='fixed'){
+  if((t.fixed_price_eur_kwh??t.fixed_price_eur_smc??t.fixed_price)==null||!Number.isFinite(Number(t.fixed_price_eur_kwh??t.fixed_price_eur_smc??t.fixed_price)))return 'Prezzo fisso mancante';
+ }else return 'Formula mista non gestita';
+ if((t.fixed_eur_year??t.annual_fee)==null||!Number.isFinite(Number(t.fixed_eur_year??t.annual_fee)))return 'Quota annua mancante';
+ return '';
+}
+$('compareRun').onclick=()=>{
+ const root=$('compareResults');root.replaceChildren();
+ const q=Number($('compareConsumption').value),ix=$('compareIndex').value.replace(',','.'),idx=Number(ix);
+ if(!Number.isFinite(q)||q<=0){root.textContent='Inserisci un consumo annuo valido';return}
+ const subset=offers.filter(o=>o.commodity===$('compareCommodity').value&&o.segment===$('compareSegment').value);
+ const excluded={},valid=[];
+ for(const o of subset){
+  const reason=eligibility(o);if(reason){excluded[reason]=(excluded[reason]||0)+1;continue}
+  const t=o.terms||{},p=o.pricing==='fixed'?Number(t.fixed_price_eur_kwh??t.fixed_price_eur_smc??t.fixed_price):(ix===''?NaN:idx+Number(t.spread_eur_kwh??t.spread_eur_smc??t.spread));
+  if(!Number.isFinite(p)||p<0){excluded['Indice mancante o non valido']=(excluded['Indice mancante o non valido']||0)+1;continue}
+  valid.push({o,cost:q*p+Number(t.fixed_eur_year??t.annual_fee)});
+ }
+ valid.sort((a,b)=>a.cost-b.cost);
+ const heading=document.createElement('p');heading.textContent=valid.length?'Offerte confrontabili: '+valid.length:'Nessuna offerta abbastanza verificata per un confronto';root.append(heading);
+ for(const x of valid.slice(0,10)){const p=document.createElement('p');p.className='item';p.textContent=(x.o.status==='verified'?'VERIFICATA':'DA CONFERMARE')+' · '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name+' · '+x.cost.toLocaleString('it-IT',{style:'currency',currency:'EUR'})+'/anno (parziale)';root.append(p)}
+ const p=document.createElement('p');p.className='notice small';p.textContent='Escluse: '+(Object.entries(excluded).map(([k,v])=>k+' '+v).join('; ')||'nessuna')+'. Le CTE DA CONFERMARE non sono validate; mancano imposte, trasporto, oneri, fasce e condizioni particolari: NON usare come preventivo definitivo.';root.append(p);
+};
+function loadTerms(){
+ const o=offers.find(x=>x.id===$('termsOffer').value),t=o?.terms||{};
+ const fields={termsSpread:t.spread_eur_kwh??t.spread_eur_smc??t.spread??'',termsFixedPrice:t.fixed_price_eur_kwh??t.fixed_price_eur_smc??t.fixed_price??'',termsAnnual:t.fixed_eur_year??t.annual_fee??'',termsIndex:t.index??'',termsFrom:o?.valid_from??'',termsUntil:o?.valid_until??'',termsNotes:t.notes??'',termsStatus:o?.status??'unverified'};
+ for(const [k,v] of Object.entries(fields))$(k).value=v;
+ baseline=JSON.parse(JSON.stringify(fields));
+ $('termsSummary').textContent=Object.entries(t).map(([k,v])=>k+': '+(typeof v==='object'?JSON.stringify(v):v)).join('\n')||'Nessuna condizione registrata';
+ $('termsSummary').style.whiteSpace='pre-wrap';message('termsMessage','');
+}
+function filterTerms(keep=''){options('termsOffer',offers.filter(x=>x.supplier_id===$('termsSupplier').value),x=>x.name,keep);loadTerms()}
+$('termsSupplier').onchange=()=>filterTerms();
+$('termsOffer').onchange=loadTerms;
+async function refresh(){
+ try{
+  const [s,o]=await Promise.all([api('/rest/v1/suppliers?select=id,name&order=name.asc&limit=100'),api('/rest/v1/offers?select=id,supplier_id,name,commodity,segment,pricing,status,terms,valid_from,valid_until&order=name.asc&limit=500')]);
+  suppliers=s;offers=o;list('suppliers',s,x=>x.name);list('offers',o,x=>(s.find(a=>a.id===x.supplier_id)?.name||'')+' · '+x.name+' · '+x.status);
+  let old=$('termsSupplier').value,offer=$('termsOffer').value;
+  options('offerSupplier',s,x=>x.name,$('offerSupplier').value);
+  options('termsSupplier',s,x=>x.name,old);filterTerms(offer);message('appStatus','Dati aggiornati: '+o.length+' offerte');
+ }catch(e){message('appStatus',e.message,true)}
+}
+$('loginForm').onsubmit=async e=>{
+ e.preventDefault();message('loginStatus','Accesso in corso…');
+ try{
+  let r=await fetch(API+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value.trim(),password:$('password').value}),cache:'no-store'});
+  let d=await r.json();if(!r.ok||!d.access_token)throw Error('Credenziali non valide');
+  token=d.access_token;
+  r=await fetch(API+'/rest/v1/rpc/is_broker_owner',{method:'POST',headers:{...auth(),'Content-Type':'application/json'},body:'{}'});
+  if(!r.ok||await r.json()!==true)throw Error('Account non autorizzato');
+  $('who').textContent=$('email').value.trim();$('password').value='';$('login').classList.add('hidden');$('app').classList.remove('hidden');
+  timer=setTimeout(()=>{reset();message('loginStatus','Sessione scaduta')},Math.max(1,Number(d.expires_in||3600)-60)*1000);
+  await refresh();
+ }catch(err){reset();message('loginStatus',err.message,true)}
+};
+$('logout').onclick=()=>reset();$('refresh').onclick=refresh;
+$('supplierForm').onsubmit=async e=>{e.preventDefault();try{await write('suppliers','POST',{name:$('supplierName').value.trim()});$('supplierName').value='';await refresh();message('supplierStatus','Fornitore salvato')}catch(err){message('supplierStatus',err.message,true)}};
+$('offerForm').onsubmit=async e=>{e.preventDefault();try{await write('offers','POST',{supplier_id:$('offerSupplier').value,name:$('offerName').value.trim(),commodity:$('commodity').value,segment:$('segment').value,pricing:$('pricing').value,status:'unverified'});$('offerName').value='';await refresh();message('offerStatusMessage','Offerta preliminare salvata')}catch(err){message('offerStatusMessage',err.message,true)}};
+$('termsForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+  const o=offers.find(x=>x.id===$('termsOffer').value);if(!o||!baseline)throw Error('Seleziona offerta');
+  const ids=Object.keys(baseline),changed=ids.filter(k=>String($(k).value)!==String(baseline[k]));
+  if(!changed.length){message('termsMessage','Nessuna modifica');return}
+  const t={...(o.terms||{})},payload={};
+  for(const [id,key] of [['termsSpread','spread_eur_kwh'],['termsFixedPrice','fixed_price_eur_kwh'],['termsAnnual','fixed_eur_year']]){
+   if(changed.includes(id)){if($(id).value==='')throw Error('Non cancellare valori già presenti');let n=Number($(id).value);if(!Number.isFinite(n)||n<0)throw Error('Valore non valido');t[key]=n}
+  }
+  if(changed.includes('termsIndex')){if(!$('termsIndex').value.trim())throw Error('Indice vuoto');t.index=$('termsIndex').value.trim()}
+  if(changed.includes('termsNotes')){if(!$('termsNotes').value.trim()&&t.notes)throw Error('Non cancellare note');t.notes=$('termsNotes').value.trim()}
+  if(changed.some(x=>['termsSpread','termsFixedPrice','termsAnnual','termsIndex','termsNotes'].includes(x)))payload.terms=t;
+  for(const [id,key] of [['termsFrom','valid_from'],['termsUntil','valid_until']])if(changed.includes(id)){if(!$(id).value&&o[key])throw Error('Non cancellare date');payload[key]=$(id).value||null}
+  if(changed.includes('termsStatus'))payload.status=$('termsStatus').value;
+  if((payload.valid_from??o.valid_from)&&(payload.valid_until??o.valid_until)&&(payload.valid_from??o.valid_from)>(payload.valid_until??o.valid_until))throw Error('Date non coerenti');
+  if(!confirm('Confermi la modifica a '+o.name+'?'))return;
+  const latest=await api('/rest/v1/offers?select=id,terms,valid_from,valid_until,status&id=eq.'+encodeURIComponent(o.id));
+  if(latest.length!==1||JSON.stringify(latest[0].terms||{})!==JSON.stringify(o.terms||{})||latest[0].status!==o.status||latest[0].valid_from!==o.valid_from||latest[0].valid_until!==o.valid_until)throw Error('Dati modificati da un altro processo: aggiorna e riprova');
+  await write('offers','PATCH',payload,o.id);await refresh();message('termsMessage','Modifiche salvate');
+ }catch(err){message('termsMessage',err.message,true)}
+};
+$('securityTest').onclick=async()=>{
+ const root=$('securityResults');root.replaceChildren();
+ for(const [name,path] of [['Fornitori anonimi','/rest/v1/suppliers?select=id&limit=1'],['Offerte anonime','/rest/v1/offers?select=id&limit=1']]){
+  const p=document.createElement('p');
+  try{const r=await fetch(API+path,{headers:{apikey:KEY,Authorization:'Bearer '+KEY},cache:'no-store'});const d=await r.json().catch(()=>null);const ok=!r.ok||(Array.isArray(d)&&d.length===0);p.className=ok?'good':'error';p.textContent=(ok?'✓ ':'✗ ')+name+': HTTP '+r.status}catch(e){p.className='error';p.textContent=name+': '+e.message}root.append(p)
+ }
+};
+</script></body></html>
