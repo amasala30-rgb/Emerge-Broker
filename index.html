@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src https://cgcplqcngpslommukoxd.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
-<title>Energy Broker 1.5</title>
+<title>Energy Broker 1.6</title>
 <style>:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;padding:20px;min-height:100vh;display:grid;place-items:center}.shell{width:min(100%,680px)}.panel{background:#192538;border:1px solid #334155;border-radius:18px;padding:22px}h1{margin:0}h2{font-size:1.2rem}label{display:block;margin:14px 0 5px}input,select,textarea{width:100%;padding:12px;border-radius:9px;background:#0d1726;color:#fff;border:1px solid #52647b;font-size:1rem}button{border:0;border-radius:9px;background:#4f95e9;color:#071321;padding:12px 16px;margin-top:15px;font-size:1rem;font-weight:650}button:disabled{opacity:.5}.secondary{background:#304158;color:white}.muted{color:#aabbd2}.small{font-size:.87rem}.hidden{display:none!important}.section{margin-top:24px}.notice{border-left:3px solid #f4c16a;padding:10px 12px;color:#e7d6aa;background:#252d3b}.item{padding:10px 0;border-top:1px solid #35455b}.good{color:#a4e7bd}.error{color:#ffb5b5}.status{white-space:pre-wrap;margin-top:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}summary{padding:12px 0;font-weight:700;cursor:pointer}details{border-bottom:1px solid #35455b}code{font-size:.9em}</style></head>
-<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.4 · PDF riepilogo</span></div><p class="muted small">Area riservata · Archivio privato</p>
+<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.6 · lettura corretta e indice</span></div><p class="muted small">Area riservata · Archivio privato</p>
 <div id="login"><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button type="submit">Accedi</button></form><div id="loginStatus" class="status"></div></div>
 <div id="app" class="hidden"><div class="row"><strong id="who"></strong><button id="logout" class="secondary">Esci</button></div>
 <div class="section"><h2>Acquisisci bolletta</h2>
@@ -30,7 +30,7 @@
 <label>Indice di riferimento</label><select id="compareIndexType"><option value="">Seleziona indice</option><option value="PUN">PUN</option><option value="PSV">PSV</option><option value="TTF">TTF</option></select>
 <label>Costo annuo attuale CONFRONTABILE (€)</label><input id="compareBaseline" type="number" min="0" step="any" placeholder="Solo energia + quota commerciale, su 12 mesi">
 <p class="notice small">Confronto interno: fino a tre proposte convenienti, con provvigioni alta, media e più contenuta. Inserire il costo attuale ricostruito sulle stesse componenti; non usare il totale della bolletta mensile. Nessuna provvigione compare nel PDF cliente.</p>
-<label>Valore indice del periodo (€/kWh o €/Smc)</label><input id="compareIndex" type="number" min="0" step="any" inputmode="decimal" placeholder="Richiesto per le offerte indicizzate">
+<label>Valore indice del periodo (€/kWh o €/Smc)</label><input id="compareIndex" type="number" min="0" step="any" inputmode="decimal" placeholder="Da verificare: PUN/PSV del periodo"><p id="indexStatus" class="notice small">Il PUN/PSV non è un dato ricavabile automaticamente dal solo nome dell’indice. Se la bolletta non ne riporta il valore, va recuperato da una fonte ufficiale prima del confronto.</p>
 <label><input id="comparePreliminary" type="checkbox" style="width:auto"> Includi CTE da confermare (simulazione non verificata)</label><button id="compareRun">Trova le proposte convenienti</button><div id="compareResults" class="status"></div><div id="selectedOffer" class="hidden section"><h3>Offerta selezionata</h3><div id="selectedOfferSummary" class="notice"></div><button id="quotePdf" type="button">Genera PDF cliente · simulazione</button><div id="quotePdfStatus" class="status"></div></div></div>
 <details class="section"><summary>Fornitori · elenco e gestione</summary><div id="suppliers"></div><form id="supplierForm"><label>Nuovo fornitore</label><input id="supplierName" required maxlength="120"><button>Aggiungi fornitore</button></form><div id="supplierStatus" class="status"></div></details>
 <details class="section"><summary>Elenco completo offerte</summary><div id="offers"></div></details>
@@ -71,12 +71,14 @@ function billExtract(text){
  const capture=(source,re)=>{const m=source.match(re);return m?num(m[1]):null};
  // PDF text extraction often flattens adjacent columns into a single long line.
  // Restrict matches to the text immediately after an exact label.
- const annual=capture(flat,/\bconsumo\s+annuo\s*[:：]?\s*([\d.,]+)\s*kWh\b/i)
-   ??capture(flat,/\bconsumo\s+annuo\s*[:：]?\s*([\d.,]+)\s*Smc\b/i)
-   ??capture(flat,/\bTOTALE\s*=\s*([\d.,]+)\s*kWh\b/i);
+ // Prefer the explicit annual F1/F2/F3 total (often printed in a separate section).
+ const annualTable=flat.match(/\bCONSUMO\s+ANNUO\s*[:：]?\s*F1\s*=.{0,260}?\bTOTALE\s*=\s*([\d.,]+)\s*kWh\b/i);
+ const annual= (annualTable?num(annualTable[1]):null)
+   ??capture(flat,/\bconsumo\s+annuo\s*[:：]?\s*([\d.,]+)\s*kWh\b/i)
+   ??capture(flat,/\bconsumo\s+annuo\s*[:：]?\s*([\d.,]+)\s*Smc\b/i);
  set('billConsumption',annual);
- const billed=capture(flat,/\bconsumo\s+fatturato\b[^\d]{0,35}([\d.,]+)\s*kWh\b/i)
-   ??capture(flat,/\bconsumi\s+fatturati\s+totali\b[^\d]{0,35}([\d.,]+)\s*kWh\b/i);
+ const billed=capture(flat,/\bconsumo\s+fatturato\b.{0,80}?([\d.,]+)\s*kWh\b/i)
+   ??capture(flat,/\bconsumi\s+fatturati\s+totali\b.{0,100}?([\d.,]+)\s*kWh\b/i);
  set('billPeriodConsumption',billed);
  // Specific "CONSUMO ANNUO: F1 = ... F2 = ... F3 = ..." table takes priority.
  const annualRow=flat.match(/\bCONSUMO\s+ANNUO\s*[:：]?\s*(.{0,220})/i);
@@ -88,13 +90,28 @@ function billExtract(text){
  // Explicitly prefer the energy-bill subtotal, not "totale da pagare" including TV fee.
  const energyTotal=capture(flat,/\btotale\s+bolletta\s*[:：]?\s*€?\s*([\d.]+,\d{2})\b/i);
  const dueTotal=capture(flat,/\btotale\s+da\s+pagare\s*[:：]?\s*€?\s*([\d.]+,\d{2})\b/i);
- set('billTotal',energyTotal??dueTotal);
+ set('billTotal',energyTotal);
  set('billPayable',dueTotal);
  set('billTV',capture(flat,/\b(?:canone\s+(?:di\s+)?abbonamento\s+(?:alla\s+)?televisione|canone\s+tv)[^\d€]{0,100}€?\s*([\d.]+,\d{2})\b/i));
  const months='GENNAIO|FEBBRAIO|MARZO|APRILE|MAGGIO|GIUGNO|LUGLIO|AGOSTO|SETTEMBRE|OTTOBRE|NOVEMBRE|DICEMBRE';
  const period=flat.match(new RegExp('(?:bolletta\\s+energia\\s+elettrica|periodo\\s+(?:di\\s+)?(?:fatturazione|riferimento|competenza))\\s*[-:–]?\\s*('+months+')\\s+(20\\d{2})','i'));
  if(period)$('billPeriod').value=period[1].toLowerCase().replace(/^./,x=>x.toUpperCase())+' '+period[2];
  else {const d=flat.match(/\b(?:dal|periodo)\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})\s*(?:al|[-–])\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i);if(d)$('billPeriod').value=d[1]+' – '+d[2]}
+ // Set index TYPE from the bill, but never invent an index VALUE.
+ const indexType=/\bPUN\s*(?:INDEX\s*GME)?\b/i.test(flat)?'PUN':/\bPSV\b/i.test(flat)?'PSV':/\bTTF\b/i.test(flat)?'TTF':'';
+ if(indexType)$('compareIndexType').value=indexType;
+ $('compareIndex').value='';
+ const explicitIndex=flat.match(/\b(?:valore\s+|quotazione\s+)(?:del\s+)?(?:PUN|PSV|TTF)\s*[:=]?\s*([01]?[.,]\d{3,6})\s*(?:€\s*[/]\s*(?:kWh|Smc))?/i);
+ if(explicitIndex){const v=num(explicitIndex[1]);if(v!==null&&v>0&&v<2)$('compareIndex').value=v}
+ $('indexStatus').textContent=indexType
+  ?'Indice rilevato: '+indexType+'. '+($('compareIndex').value?'Valore individuato nel documento: verifica periodo e unità di misura.':'Il documento non riporta un valore numerico inequivocabile: serve il valore ufficiale del periodo, non una stima automatica.')
+  :'Indice non riconosciuto: seleziona PUN/PSV/TTF e inserisci il valore ufficiale.';
+ if(!$('billPeriod').value){
+   const fallback=flat.match(new RegExp('\\\\bBolletta\\\\s+Energia\\\\s+Elettrica\\\\s*[-–]\\\\s*('+months+')\\\\s+(20\\\\d{2})','i'));
+   if(fallback)$('billPeriod').value=fallback[1].toLowerCase().replace(/^./,x=>x.toUpperCase())+' '+fallback[2];
+ }
+ // Never use a TV licence fee as the bill total.
+ if($('billTotal').value&&$('billTV').value&&Number($('billTotal').value)===Number($('billTV').value))$('billTotal').value='';
  // A synthesized €/kWh "prezzo medio" includes network costs: do not label it a pure energy rate.
  const found=['billSupplier','billPoint','billConsumption','billPeriodConsumption','billF1','billF2','billF3','billTotal','billPeriod','billUnitPrice'].filter(id=>$(id).value!=='');
  message('billOcrStatus','Testo acquisito. Campi riconosciuti: '+found.length+'/10. Verifica sempre il documento. Il prezzo medio totale non viene interpretato come prezzo della sola materia energia.');
