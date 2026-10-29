@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src https://cgcplqcngpslommukoxd.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
-<title>Energy Broker 1.1</title>
+<title>Energy Broker 1.5</title>
 <style>:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;padding:20px;min-height:100vh;display:grid;place-items:center}.shell{width:min(100%,680px)}.panel{background:#192538;border:1px solid #334155;border-radius:18px;padding:22px}h1{margin:0}h2{font-size:1.2rem}label{display:block;margin:14px 0 5px}input,select,textarea{width:100%;padding:12px;border-radius:9px;background:#0d1726;color:#fff;border:1px solid #52647b;font-size:1rem}button{border:0;border-radius:9px;background:#4f95e9;color:#071321;padding:12px 16px;margin-top:15px;font-size:1rem;font-weight:650}button:disabled{opacity:.5}.secondary{background:#304158;color:white}.muted{color:#aabbd2}.small{font-size:.87rem}.hidden{display:none!important}.section{margin-top:24px}.notice{border-left:3px solid #f4c16a;padding:10px 12px;color:#e7d6aa;background:#252d3b}.item{padding:10px 0;border-top:1px solid #35455b}.good{color:#a4e7bd}.error{color:#ffb5b5}.status{white-space:pre-wrap;margin-top:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}summary{padding:12px 0;font-weight:700;cursor:pointer}details{border-bottom:1px solid #35455b}code{font-size:.9em}</style></head>
-<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.1 · lettura bollette</span></div><p class="muted small">Area riservata · Archivio privato</p>
+<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.4 · PDF riepilogo</span></div><p class="muted small">Area riservata · Archivio privato</p>
 <div id="login"><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button type="submit">Accedi</button></form><div id="loginStatus" class="status"></div></div>
 <div id="app" class="hidden"><div class="row"><strong id="who"></strong><button id="logout" class="secondary">Esci</button></div>
 <div class="section"><h2>Acquisisci bolletta</h2>
@@ -16,18 +16,22 @@
 <label>POD / PDR</label><input id="billPoint" placeholder="Controlla e correggi">
 <label>Consumo fatturato nel periodo (kWh o Smc)</label><input id="billPeriodConsumption" type="number" min="0" step="any" inputmode="decimal"><label>Consumi per fascia F1 / F2 / F3 (kWh, se presenti)</label><div class="row"><input id="billF1" type="number" min="0" step="any" placeholder="F1" style="flex:1;min-width:80px"><input id="billF2" type="number" min="0" step="any" placeholder="F2" style="flex:1;min-width:80px"><input id="billF3" type="number" min="0" step="any" placeholder="F3" style="flex:1;min-width:80px"></div><label>Consumo annuo (kWh o Smc)</label><input id="billConsumption" type="number" min="0" step="any" inputmode="decimal">
 <label>Totale bolletta (€)</label><input id="billTotal" type="number" min="0" step="any" inputmode="decimal">
-<label>Prezzo materia energia indicato (€ / kWh o Smc, se riconoscibile)</label><input id="billUnitPrice" type="number" min="0" step="any" inputmode="decimal"><label>Periodo di riferimento</label><input id="billPeriod" placeholder="Controlla e correggi">
+<label>Totale da pagare (€; se presente)</label><input id="billPayable" type="number" min="0" step="any" inputmode="decimal"><label>Canone TV (€; se presente)</label><input id="billTV" type="number" min="0" step="any" inputmode="decimal"><label>Prezzo materia energia indicato (€ / kWh o Smc, se riconoscibile)</label><input id="billUnitPrice" type="number" min="0" step="any" inputmode="decimal"><label>Periodo di riferimento</label><input id="billPeriod" placeholder="Controlla e correggi">
 <label>Testo letto (modificabile)</label><textarea id="billText" rows="5" placeholder="Il testo OCR comparirà qui. Puoi anche trascrivere manualmente i dati."></textarea>
+<button id="billPdf" type="button">Scarica riepilogo PDF</button><div id="billPdfStatus" class="status" aria-live="polite"></div>
 <button id="billUse" type="button" class="secondary">Usa il consumo nel confronto</button>
 <button id="billSave" type="button" class="secondary">Salva nell'archivio privato</button>
 <div id="billSaveStatus" class="status"></div>
 <p class="notice small">Controlla sempre i dati: una bolletta può riportare consumi del periodo, consumi annui stimati e importi non direttamente confrontabili. Il salvataggio conserva il documento originale nell'archivio privato; i campi trascritti restano in questa schermata.</p></div>
-<div class="section"><h2>Confronto offerte · anteprima</h2><p class="notice small">Simulazione della sola componente commerciale. Non è il totale della bolletta e non è un preventivo definitivo. Le CTE scadute, non verificate o incomplete vengono escluse.</p>
+<div class="section"><h2>Confronto offerte · anteprima</h2><p class="notice small">Simulazione della sola componente commerciale. Non è il totale della bolletta e non è un preventivo definitivo. Le CTE incomplete o sostituite vengono escluse. Le CTE senza successore documentato restano candidate, ma la loro validità commerciale richiede conferma.</p>
 <label>Fornitura</label><select id="compareCommodity"><option value="electricity">Luce</option><option value="gas">Gas</option></select>
 <label>Cliente</label><select id="compareSegment"><option value="domestic">Domestico</option><option value="business">Business</option><option value="condominium">Condominio</option></select>
 <label>Consumo annuo (kWh o Smc)</label><input id="compareConsumption" type="number" min="1" step="any" inputmode="decimal">
+<label>Indice di riferimento</label><select id="compareIndexType"><option value="">Seleziona indice</option><option value="PUN">PUN</option><option value="PSV">PSV</option><option value="TTF">TTF</option></select>
+<label>Costo annuo attuale CONFRONTABILE (€)</label><input id="compareBaseline" type="number" min="0" step="any" placeholder="Solo energia + quota commerciale, su 12 mesi">
+<p class="notice small">Confronto interno: fino a tre proposte convenienti, con provvigioni alta, media e più contenuta. Inserire il costo attuale ricostruito sulle stesse componenti; non usare il totale della bolletta mensile. Nessuna provvigione compare nel PDF cliente.</p>
 <label>Valore indice del periodo (€/kWh o €/Smc)</label><input id="compareIndex" type="number" min="0" step="any" inputmode="decimal" placeholder="Richiesto per le offerte indicizzate">
-<label><input id="comparePreliminary" type="checkbox" style="width:auto"> Includi CTE da confermare (simulazione non verificata)</label><button id="compareRun">Verifica confrontabilità</button><div id="compareResults" class="status"></div></div>
+<label><input id="comparePreliminary" type="checkbox" style="width:auto"> Includi CTE da confermare (simulazione non verificata)</label><button id="compareRun">Trova le proposte convenienti</button><div id="compareResults" class="status"></div><div id="selectedOffer" class="hidden section"><h3>Offerta selezionata</h3><div id="selectedOfferSummary" class="notice"></div><button id="quotePdf" type="button">Genera PDF cliente · simulazione</button><div id="quotePdfStatus" class="status"></div></div></div>
 <details class="section"><summary>Fornitori · elenco e gestione</summary><div id="suppliers"></div><form id="supplierForm"><label>Nuovo fornitore</label><input id="supplierName" required maxlength="120"><button>Aggiungi fornitore</button></form><div id="supplierStatus" class="status"></div></details>
 <details class="section"><summary>Elenco completo offerte</summary><div id="offers"></div></details>
 <details class="section"><summary>Aggiungi offerta preliminare</summary><form id="offerForm"><label>Fornitore</label><select id="offerSupplier"></select><label>Nome offerta</label><input id="offerName" required maxlength="180"><label>Fornitura</label><select id="commodity"><option value="electricity">Luce</option><option value="gas">Gas</option></select><label>Cliente</label><select id="segment"><option value="domestic">Domestico</option><option value="business">Business</option><option value="condominium">Condominio</option></select><label>Prezzo</label><select id="pricing"><option value="indexed">Variabile</option><option value="fixed">Fisso</option><option value="mixed">Misto</option></select><button>Salva offerta non verificata</button></form><div id="offerStatusMessage" class="status"></div></details>
@@ -59,36 +63,41 @@ function loadLibrary(src){
 }
 function billExtract(text){
  $('billText').value=text;
- // Do not silently keep values from a previously opened bill.
- for(const id of ['billSupplier','billPoint','billConsumption','billPeriodConsumption','billF1','billF2','billF3','billTotal','billPeriod','billUnitPrice'])$(id).value='';
+ for(const id of ['billSupplier','billPoint','billConsumption','billPeriodConsumption','billF1','billF2','billF3','billTotal','billPayable','billTV','billPeriod','billUnitPrice'])$(id).value='';
+ const flat=text.replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
  const normalized=text.replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ');
- const upper=normalized.toUpperCase();
- const point=upper.match(/\bIT\s*\d{3}\s*E\s*[A-Z0-9\s]{8,15}\b/) || upper.match(/\b\d{14}\b/);
+ const num=v=>{let x=v.trim().replace(/\s/g,'');if(x.includes(','))x=x.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(?:\.\d{3})+$/.test(x))x=x.replace(/\./g,'');const n=Number(x);return Number.isFinite(n)?n:null};
+ const set=(id,v)=>{if(v!==null&&Number.isFinite(v)&&v>=0)$(id).value=v};
+ const capture=(source,re)=>{const m=source.match(re);return m?num(m[1]):null};
+ // PDF text extraction often flattens adjacent columns into a single long line.
+ // Restrict matches to the text immediately after an exact label.
+ const annual=capture(flat,/\bconsumo\s+annuo\s*[:：]?\s*([\d.,]+)\s*kWh\b/i)
+   ??capture(flat,/\bconsumo\s+annuo\s*[:：]?\s*([\d.,]+)\s*Smc\b/i)
+   ??capture(flat,/\bTOTALE\s*=\s*([\d.,]+)\s*kWh\b/i);
+ set('billConsumption',annual);
+ const billed=capture(flat,/\bconsumo\s+fatturato\b[^\d]{0,35}([\d.,]+)\s*kWh\b/i)
+   ??capture(flat,/\bconsumi\s+fatturati\s+totali\b[^\d]{0,35}([\d.,]+)\s*kWh\b/i);
+ set('billPeriodConsumption',billed);
+ // Specific "CONSUMO ANNUO: F1 = ... F2 = ... F3 = ..." table takes priority.
+ const annualRow=flat.match(/\bCONSUMO\s+ANNUO\s*[:：]?\s*(.{0,220})/i);
+ if(annualRow){for(const f of ['F1','F2','F3'])set('bill'+f,capture(annualRow[1],new RegExp('\\b'+f+'\\s*=\\s*([\\d.,]+)\\s*kWh','i')))}
+ const point=flat.toUpperCase().match(/\bIT\s*\d{3}\s*E\s*[A-Z0-9]{8}\b/);
  if(point)$('billPoint').value=point[0].replace(/\s/g,'');
- const suppliers=[['Free Luce & Gas',/FREE\s+LUCE\s*(?:&|E|ED)\s*GAS/i],['Enel Energia',/ENEL\s+ENERGIA/i],['Edison Energia',/EDISON\s+ENERGIA/i],['Iren',/\bIREN\b/i],['Eviso',/\bEVISO\b/i],['Sorgenia',/\bSORGENIA\b/i],['A2A Energia',/A2A\s+ENERGIA/i],['Plenitude',/\bPLENITUDE\b/i]];
- for(const [name,re] of suppliers){if(re.test(normalized)){$('billSupplier').value=name;break}}
- function num(raw){let v=raw.replace(/\s/g,'');if(v.includes(',')&&v.includes('.'))v=v.replace(/\./g,'').replace(',','.');else if(v.includes(','))v=v.replace(',','.');else if(/^\d{1,3}(?:\.\d{3})+$/.test(v))v=v.replace(/\./g,'');const n=Number(v);return Number.isFinite(n)?n:null}
- function pick(patterns){for(const re of patterns){const m=normalized.match(re);if(m){const v=num(m[1]);if(v!==null&&v>=0)return v}}return null}
- const number='([0-9][0-9., ]{0,14})';
- const unit='(?:kWh|Smc|s\\.?m\\.?c\\.?)';
- // Anchor annual consumption to explicit annual/12-month language, not the billed-period figure.
- const annual=pick([new RegExp('(?:consumo|consumi)\\s+(?:annuo|annui|degli\\s+ultimi\\s+12\\s+mesi|ultimi\\s+12\\s+mesi)[^\\n\\r0-9]{0,85}'+number+'\\s*'+unit,'i'),new RegExp('(?:ultimi\\s+12\\s+mesi|consumo\\s+annuale)[^\\n\\r0-9]{0,85}'+number+'\\s*'+unit,'i')]);
- if(annual!==null)$('billConsumption').value=annual;
- const periodConsumption=pick([new RegExp('(?:consumo|energia)\\s+(?:fatturato|fatturata|del\\s+periodo|nel\\s+periodo)[^\\n\\r0-9]{0,70}'+number+'\\s*'+unit,'i'),new RegExp('(?:totale\\s+consumi|consumi\\s+fatturati)[^\\n\\r0-9]{0,70}'+number+'\\s*'+unit,'i')]);
- if(periodConsumption!==null)$('billPeriodConsumption').value=periodConsumption;
- for(const fascia of ['F1','F2','F3']){
-  const v=pick([new RegExp('(?:consum[oi]\\s+)?\\b'+fascia+'\\b[^\\n\\r0-9]{0,24}'+number+'\\s*kWh','i'),new RegExp(number+'\\s*kWh[^\\n\\r]{0,12}\\b'+fascia+'\\b','i')]);
-  if(v!==null)$('bill'+fascia).value=v;
- }
- const amount=pick([new RegExp('(?:totale\\s+(?:da\\s+pagare|bolletta|fattura)|importo\\s+da\\s+pagare)[^\\n\\r0-9]{0,45}€?\\s*'+number,'i')]);
- if(amount!==null)$('billTotal').value=amount;
- const date='(?:\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4})';
- const dates=normalized.match(new RegExp('(?:periodo\\s+(?:di\\s+)?(?:fatturazione|riferimento|competenza)|dal)\\s*[:\\-]?\\s*('+date+')\\s*(?:al|a|[-–])\\s*('+date+')','i'));
- if(dates)$('billPeriod').value=dates[1]+' – '+dates[2];
- const price=pick([new RegExp('(?:prezzo\\s+(?:energia|materia\\s+energia)|corrispettivo\\s+energia)[^\\n\\r0-9]{0,45}'+number+'\\s*(?:€\\s*\\/\\s*(?:kWh|Smc)|€\\s*(?:kWh|Smc))','i')]);
- if(price!==null)$('billUnitPrice').value=price;
+ const suppliers=[['Free Luce & Gas',/FREE\s*LUCE\s*(?:&|E|ED)\s*GAS/i],['Enel Energia',/ENEL\s+ENERGIA/i],['Edison Energia',/EDISON\s+ENERGIA/i],['Iren',/\bIREN\b/i],['Eviso',/\bEVISO\b/i],['Sorgenia',/\bSORGENIA\b/i],['A2A Energia',/A2A\s+ENERGIA/i],['Plenitude',/\bPLENITUDE\b/i]];
+ for(const [name,re] of suppliers)if(re.test(flat)){$('billSupplier').value=name;break}
+ // Explicitly prefer the energy-bill subtotal, not "totale da pagare" including TV fee.
+ const energyTotal=capture(flat,/\btotale\s+bolletta\s*[:：]?\s*€?\s*([\d.]+,\d{2})\b/i);
+ const dueTotal=capture(flat,/\btotale\s+da\s+pagare\s*[:：]?\s*€?\s*([\d.]+,\d{2})\b/i);
+ set('billTotal',energyTotal??dueTotal);
+ set('billPayable',dueTotal);
+ set('billTV',capture(flat,/\b(?:canone\s+(?:di\s+)?abbonamento\s+(?:alla\s+)?televisione|canone\s+tv)[^\d€]{0,100}€?\s*([\d.]+,\d{2})\b/i));
+ const months='GENNAIO|FEBBRAIO|MARZO|APRILE|MAGGIO|GIUGNO|LUGLIO|AGOSTO|SETTEMBRE|OTTOBRE|NOVEMBRE|DICEMBRE';
+ const period=flat.match(new RegExp('(?:bolletta\\s+energia\\s+elettrica|periodo\\s+(?:di\\s+)?(?:fatturazione|riferimento|competenza))\\s*[-:–]?\\s*('+months+')\\s+(20\\d{2})','i'));
+ if(period)$('billPeriod').value=period[1].toLowerCase().replace(/^./,x=>x.toUpperCase())+' '+period[2];
+ else {const d=flat.match(/\b(?:dal|periodo)\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})\s*(?:al|[-–])\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i);if(d)$('billPeriod').value=d[1]+' – '+d[2]}
+ // A synthesized €/kWh "prezzo medio" includes network costs: do not label it a pure energy rate.
  const found=['billSupplier','billPoint','billConsumption','billPeriodConsumption','billF1','billF2','billF3','billTotal','billPeriod','billUnitPrice'].filter(id=>$(id).value!=='');
- message('billOcrStatus','Testo acquisito. Campi riconosciuti: '+found.length+'/10. Verifica sempre consumi annui, importi e fasce prima di usare il confronto.');
+ message('billOcrStatus','Testo acquisito. Campi riconosciuti: '+found.length+'/10. Verifica sempre il documento. Il prezzo medio totale non viene interpretato come prezzo della sola materia energia.');
 }
 $('billRead').onclick=async()=>{
  if(!billAttachment){message('billOcrStatus','Seleziona prima un documento',true);return}
@@ -111,6 +120,68 @@ $('billRead').onclick=async()=>{
  }catch(err){message('billOcrStatus','Lettura non riuscita: '+err.message+'. Puoi inserire i dati manualmente.',true)}
  finally{button.disabled=false}
 };
+// Il riepilogo viene costruito localmente: non inviamo dati della bolletta a server PDF.
+$('billPdf').onclick=async()=>{
+ const button=$('billPdf');button.disabled=true;
+ message('billPdfStatus','Preparazione del riepilogo PDF…');
+ try{
+  if(!window.jspdf?.jsPDF)await loadLibrary('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js');
+  const doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,M=17, usable=W-M*2;
+  const navy=[22,42,66],blue=[34,106,171],teal=[14,142,145],gray=[95,112,130];
+  const txt=(v,x,y,size=11,color=navy,weight='normal')=>{doc.setFont('helvetica',weight);doc.setFontSize(size);doc.setTextColor(...color);doc.text(String(v),x,y)};
+  const box=(x,y,w,h,fill=[242,247,251])=>{doc.setFillColor(...fill);doc.roundedRect(x,y,w,h,3,3,'F')};
+  const get=id=>$(id).value.trim();
+  const n=id=>{const v=Number(get(id).replace(',','.'));return get(id)&&Number.isFinite(v)&&v>=0?v:null};
+  const fmt=(v,unit='',digits=2)=>v===null?'Non disponibile':v.toLocaleString('it-IT',{minimumFractionDigits:digits,maximumFractionDigits:digits})+(unit?' '+unit:'');
+  const supplier=get('billSupplier')||'Fornitore non rilevato';
+  const period=get('billPeriod')||'Periodo non rilevato';
+  const annual=n('billConsumption'),month=n('billPeriodConsumption'),total=n('billTotal'),payable=n('billPayable'),tv=n('billTV');
+  const f=[n('billF1'),n('billF2'),n('billF3')];
+  const point=get('billPoint');
+  // Header e titolo
+  doc.setFillColor(...navy);doc.rect(0,0,210,43,'F');
+  txt('ENERGY BROKER',M,20,22,[255,255,255],'bold');
+  txt('Scheda di lettura bolletta',M,30,11,[214,233,246]);
+  txt('RIEPILOGO',M,53,11,blue,'bold');
+  txt(supplier,M,63,17,navy,'bold');
+  txt('Periodo: '+period,M,71,10,gray);
+  // Carte principali
+  const cards=[{label:'CONSUMO ANNUO',value:fmt(annual,'kWh'),x:M},{label:'CONSUMO PERIODO',value:fmt(month,'kWh'),x:M+90}];
+  cards.forEach(c=>{box(c.x,80,86,32);txt(c.label,c.x+6,90,8,gray,'bold');txt(c.value,c.x+6,103,15,navy,'bold')});
+  box(M,119,usable,34,[230,244,244]);txt('TOTALE BOLLETTA (esclusi eventuali importi estranei alla fornitura)',M+6,129,8,gray,'bold');
+  txt(fmt(total,'EUR'),M+6,144,21,teal,'bold');
+  txt('DETTAGLIO PAGAMENTO',M,165,11,blue,'bold');
+  box(M,170,usable,26);
+  txt('Totale da pagare',M+6,180,10,gray);
+  doc.setLineWidth(.2);doc.setDrawColor(210,221,230);doc.line(M+6,184,M+usable-6,184);
+  txt('Canone TV (se presente)',M+6,191,9,gray);
+  // Allineamento valori di destra: ricalcolo in modalità right
+  
+  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...navy);doc.text(fmt(payable,'EUR'),M+usable-6,180,{align:'right'});
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.text(fmt(tv,'EUR'),M+usable-6,191,{align:'right'});
+  txt('CONSUMI ANNUALI PER FASCIA',M,208,11,blue,'bold');
+  const available=f.every(v=>v!==null)&&f.reduce((a,b)=>a+b,0)>0;
+  if(available){
+   const sum=f.reduce((a,b)=>a+b,0),colors=[[40,114,185],[26,155,161],[126,149,190]];
+   let x=M;f.forEach((v,i)=>{const width=usable*v/sum;doc.setFillColor(...colors[i]);doc.rect(x,216,width,9,'F');x+=width});
+   f.forEach((v,i)=>{const x=M+i*60;doc.setFillColor(...colors[i]);doc.circle(x+2,235,2,'F');txt('F'+(i+1)+'  '+fmt(v,'kWh'),x+7,237,9,navy)});
+  }else{box(M,214,usable,27);txt('F1 / F2 / F3: dati non disponibili o incompleti.',M+6,228,10,gray)}
+  txt('INFORMAZIONI FORNITURA',M,253,11,blue,'bold');
+  txt('POD / PDR: '+(point||'Non disponibile'),M,263,10,navy);
+  const unit=n('billUnitPrice');
+  txt('Prezzo materia energia (solo se identificato): '+fmt(unit,'EUR/unità',5),M,270,9,gray);
+  doc.setDrawColor(205,220,230);doc.line(M,278,W-M,278);
+  const note='Scheda informativa generata dai dati estratti o corretti manualmente. Verificare sempre i valori con la bolletta originale. Non costituisce un preventivo né una stima del risparmio. Il totale da pagare può comprendere voci non energetiche.';
+  doc.setFontSize(8);doc.setTextColor(...gray);doc.text(doc.splitTextToSize(note,usable),M,284);
+  doc.setFontSize(8);doc.text('Energy Broker · riepilogo locale',W-M,294,{align:'right'});
+  const filename='EnergyBroker_Riepilogo_'+(period||'Bolletta').replace(/[^a-z0-9_-]/gi,'_').slice(0,45)+'.pdf';
+  doc.save(filename);
+  message('billPdfStatus','PDF generato. Controlla il file scaricato prima di condividerlo.');
+ }catch(e){message('billPdfStatus','Errore generazione PDF: '+e.message,true)}
+ finally{button.disabled=false}
+};
+
 $('billUse').onclick=()=>{
  const value=Number($('billConsumption').value.replace(',','.'));
  if(!Number.isFinite(value)||value<=0){message('billSaveStatus','Inserisci prima un consumo annuo valido',true);return}
@@ -131,7 +202,7 @@ $('billSave').onclick=async()=>{
  finally{button.disabled=false}
 };
 
-let token=null,timer=null,offers=[],suppliers=[],baseline=null;
+let token=null,timer=null,offers=[],suppliers=[],commissions=[],baseline=null,selectedQuote=null;
 const auth=()=>({'apikey':KEY,'Authorization':'Bearer '+token});
 function message(id,txt,bad=false){$(id).textContent=txt;$(id).className='status '+(bad?'error':'good')}
 function reset(){token=null;clearTimeout(timer);offers=[];suppliers=[];$('password').value='';$('app').classList.add('hidden');$('login').classList.remove('hidden')}
@@ -142,13 +213,14 @@ function options(id,rows,label,keep){$(id).replaceChildren();for(const x of rows
 function eligibility(o){
  const t=o.terms||{},today=new Date().toISOString().slice(0,10);
  if(o.status!=='verified' && !(o.status==='to_confirm' && $('comparePreliminary').checked))return 'CTE non verificata';
- if(!o.valid_until)return 'Scadenza assente';
- if(o.valid_until<today)return 'CTE scaduta';
+ if(o.status==='superseded'||o.status==='withdrawn')return 'CTE sostituita o ritirata';
  if(o.valid_from&&o.valid_from>today)return 'Validità futura';
  if(t.historical_only||t.expired||t.spread_to_be_filled)return 'CTE storica o incompleta';
  if(t.additional_charges_require_review||t.requires_full_terms_review||t.additional_charges||t.free4you_eur_year!==undefined||t.summary_prices_not_necessarily_commodity_only||t.network_losses||t.losses_bt||t.losses_mt||t.discounts_conditional||t.cap_formula||t.cap_eur_kwh!==undefined)return 'Formula o costi da verificare';
  if(o.pricing==='indexed'){
   if(!t.index)return 'Indice assente';
+  if(!$('compareIndexType').value)return 'Indice non selezionato';
+  if(!new RegExp('^'+$('compareIndexType').value+'(?:$|[\\s_-])','i').test(t.index))return 'Indice differente da quello selezionato';
   if(!/^(PUN|PSV|TTF)(?:$|[\s_-])/i.test(t.index)||/MGP|PUNi|PSVDAm|month ahead|hourly/i.test(t.index))return 'Formula indice specifica';
   if(/fasce|F1|F2|F3|orari|hour|biorar/i.test(t.index))return 'Servono consumi per fascia';
   if(t.index_multiplier!==undefined&&Number(t.index_multiplier)!==1)return 'Formula complessa';
@@ -171,10 +243,89 @@ $('compareRun').onclick=()=>{
   if(!Number.isFinite(p)||p<0){excluded['Indice mancante o non valido']=(excluded['Indice mancante o non valido']||0)+1;continue}
   valid.push({o,cost:q*p+Number(t.fixed_eur_year??t.annual_fee)});
  }
- valid.sort((a,b)=>a.cost-b.cost);
- const heading=document.createElement('p');heading.textContent=valid.length?'Offerte confrontabili: '+valid.length:'Nessuna offerta abbastanza verificata per un confronto';root.append(heading);
- for(const x of valid.slice(0,10)){const p=document.createElement('p');p.className='item';p.textContent=(x.o.status==='verified'?'VERIFICATA':'DA CONFERMARE')+' · '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name+' · '+x.cost.toLocaleString('it-IT',{style:'currency',currency:'EUR'})+'/anno (parziale)';root.append(p)}
- const p=document.createElement('p');p.className='notice small';p.textContent='Escluse: '+(Object.entries(excluded).map(([k,v])=>k+' '+v).join('; ')||'nessuna')+'. Le CTE DA CONFERMARE non sono validate; mancano imposte, trasporto, oneri, fasce e condizioni particolari: NON usare come preventivo definitivo.';root.append(p);
+ const raw=$('compareBaseline').value.trim(),base=raw===''?NaN:Number(raw);
+ const hasBase=Number.isFinite(base)&&base>0;
+ const enriched=valid.map(x=>{
+  const ct=commissions.find(k=>k.offer_id===x.o.id)?.terms||{};
+  const comm=Number(ct.acquisition_eur);
+  const commission=ct.acquisition_eur!==undefined&&ct.acquisition_eur!==null&&Number.isFinite(comm)&&comm>=0?comm:null;
+  return {...x,commission,commissionStatus:ct.status||'non disponibile',saving:hasBase?base-x.cost:null};
+ });
+ const eligible=enriched.filter(x=>hasBase&&x.saving>0);
+ // Tre profili distinti: massima provvigione, acquisizione e compromesso.
+ // Se non ci sono candidati sufficienti si visualizzano solo quelli disponibili.
+ const commissionCandidates=eligible.filter(x=>x.commission!==null);
+ const byCommission=[...commissionCandidates].sort((a,b)=>b.commission-a.commission||b.saving-a.saving);
+ const most=byCommission[0]||null;
+ const acquisitionPool=commissionCandidates.filter(x=>x.o.id!==most?.o.id&&x.commission<most.commission);
+ const acquisition=[...acquisitionPool].sort((a,b)=>b.saving-a.saving||b.commission-a.commission)[0]||null;
+ const balancePool=commissionCandidates.filter(x=>x.o.id!==most?.o.id&&x.o.id!==acquisition?.o.id);
+ let middle=null;
+ if(balancePool.length){
+  const minC=Math.min(...commissionCandidates.map(x=>x.commission)),maxC=Math.max(...commissionCandidates.map(x=>x.commission));
+  const minS=Math.min(...commissionCandidates.map(x=>x.saving)),maxS=Math.max(...commissionCandidates.map(x=>x.saving));
+  middle=[...balancePool].sort((a,b)=>{
+   const score=x=>0.5*((x.commission-minC)/(maxC-minC||1))+0.5*((x.saving-minS)/(maxS-minS||1));
+   return score(b)-score(a);
+  })[0];
+ }
+ const chosen=[];
+ for(const [label,x] of [['Acquisizione · più risparmio',acquisition],['Equilibrio · compromesso',middle],['Redditività · provvigione massima',most]]){
+  if(x&&!chosen.some(y=>y.x.o.id===x.o.id))chosen.push({label,x});
+ }
+ // Ripiego: offerte con provvigione nota, non duplicate, sempre convenienti.
+ for(const x of byCommission){if(chosen.length>=3)break;if(!chosen.some(y=>y.x.o.id===x.o.id))chosen.push({label:'Alternativa conveniente',x})}
+ selectedQuote=null;$('selectedOffer').classList.add('hidden');
+ const p=document.createElement('p');p.className='notice small';
+ p.textContent=!hasBase?'Inserisci il costo annuo attuale calcolato con le STESSE componenti (energia + quota commerciale). Non usare il totale della bolletta.':!eligible.length?'Nessuna offerta più economica sul perimetro confrontato.':!commissionCandidates.length?'Le offerte convenienti non hanno provvigioni di acquisizione numeriche registrate.':'Trovate '+chosen.length+' proposte selezionabili su '+eligible.length+' offerte preliminarmente convenienti. Il confronto riguarda SOLO energia + quota commerciale, non il totale della bolletta.';
+ root.append(p);
+ const money=x=>x.toLocaleString('it-IT',{style:'currency',currency:'EUR'});
+ for(const {label,x} of chosen){
+  const d=document.createElement('div');d.className='item';d.style.cssText='padding:15px;margin:10px 0;border:1px solid #47617d;border-radius:12px;background:#1b3045';
+  const h=document.createElement('strong');h.textContent=label+' · '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name;d.append(h);
+  const info=document.createElement('p');info.textContent='Costo commerciale annuo stimato: '+money(x.cost)+' · Risparmio stimato: '+money(x.saving)+' ('+(100*x.saving/base).toFixed(2)+'%) · TUA PROVVIGIONE: '+money(x.commission);d.append(info);
+  const status=document.createElement('p');status.className='notice small';status.textContent='CTE: '+x.o.status+' · Provvigione: '+x.commissionStatus+' · Dati non verificati: non usare come preventivo definitivo.';d.append(status);
+  const b=document.createElement('button');b.type='button';b.textContent='Seleziona questa offerta';b.onclick=()=>{
+   selectedQuote={...x,base,consumption:q,index:ix,indexType:$('compareIndexType').value,commodity:$('compareCommodity').value,period:$('billPeriod').value.trim(),supplierCurrent:$('billSupplier').value.trim(),point:$('billPoint').value.trim(),selectedAt:new Date().toISOString()};
+   $('selectedOffer').classList.remove('hidden');$('selectedOfferSummary').textContent='Hai scelto '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name+' | Risparmio commerciale stimato '+money(x.saving)+'/anno | Tua provvigione '+money(x.commission)+' (NON presente nel PDF). Conferma con il pulsante qui sotto.';
+   message('quotePdfStatus','');$('selectedOffer').scrollIntoView({behavior:'smooth',block:'nearest'});
+  };d.append(b);root.append(d);
+ }
+ const excludedText=Object.entries(excluded).map(([k,v])=>k+' '+v).join('; ')||'nessuna';
+ const foot=document.createElement('p');foot.className='muted small';foot.textContent='Escluse per condizioni: '+excludedText+'. Mancano imposte, oneri, trasporto, eventuali perdite e condizioni particolari. Le CTE non sostituite vanno comunque verificate rispetto ai documenti del fornitore.';root.append(foot);
+};
+for(const id of ['compareCommodity','compareSegment','compareConsumption','compareIndexType','compareBaseline','compareIndex','comparePreliminary']){ $(id).addEventListener('change',()=>{selectedQuote=null;$('selectedOffer').classList.add('hidden');$('compareResults').textContent='Parametri modificati: ricalcola le offerte.'}) }
+$('quotePdf').onclick=async()=>{
+ const x=selectedQuote;
+ if(!x){message('quotePdfStatus','Seleziona prima un’offerta.',true);return}
+ const button=$('quotePdf');button.disabled=true;
+ try{
+  if(!window.jspdf?.jsPDF)await loadLibrary('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js');
+  const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}),W=210,M=17;
+  const money=v=>v.toLocaleString('it-IT',{style:'currency',currency:'EUR'});
+  const provider=suppliers.find(s=>s.id===x.o.supplier_id)?.name||'Fornitore da verificare';
+  const line=(text,y,size=11,bold=false)=>{doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(doc.splitTextToSize(text,W-M*2),M,y)};
+  doc.setFillColor(19,42,66);doc.rect(0,0,W,45,'F');doc.setTextColor(255,255,255);line('ENERGY BROKER',22,20,true);line('SIMULAZIONE ECONOMICA PRELIMINARE',33,10,true);
+  doc.setTextColor(22,42,66);line('Confronto tra tariffa attuale e proposta',60,15,true);
+  line('Fornitura: '+(x.commodity==='electricity'?'Luce':'Gas')+'  |  Consumo annuo: '+x.consumption.toLocaleString('it-IT')+' '+(x.commodity==='electricity'?'kWh':'Smc'),73,10);
+  line('POD/PDR: '+(x.point||'Non indicato'),81,10);
+  line('Fornitore attuale: '+(x.supplierCurrent||'Non indicato'),89,10);
+  line('Fornitore proposto: '+provider,103,11,true);
+  line('Offerta selezionata: '+x.o.name,112,10);
+  doc.setFillColor(233,240,247);doc.roundedRect(M,123,W-2*M,57,3,3,'F');
+  line('Costo annuo attuale (componenti commerciali)',135,10);line(money(x.base),144,14,true);
+  line('Costo annuo proposto (stesse componenti)',156,10);line(money(x.cost),165,14,true);
+  doc.setTextColor(22,113,79);line('Risparmio annuo stimato: '+money(x.saving)+'  ('+(100*x.saving/x.base).toFixed(2)+'%)',194,14,true);
+  doc.setTextColor(22,42,66);line('Criteri del confronto',210,11,true);
+  const assumptions='Stesso consumo annuo e stessa durata di 12 mesi. Costi confrontati: componente energia/materia prima e quota commerciale annua, secondo i dati inseriti. '+(x.o.pricing==='indexed'?'Indice ipotizzato: '+x.indexType+' = '+x.index+' euro/unità. ':'')+'Non include trasporto, oneri di sistema, imposte, IVA, canone TV, perdite di rete, sconti condizionati o altre voci non modellate.';
+  const lines=doc.splitTextToSize(assumptions,W-M*2);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.text(lines,M,219);
+  const y=219+lines.length*4.4+8;
+  const warning='ATTENZIONE: simulazione preliminare NON equiparabile al totale della bolletta e NON valida come preventivo definitivo. Verificare la CTE applicabile, gli importi e tutte le condizioni prima della consegna al cliente.';
+  doc.setTextColor(160,65,45);doc.text(doc.splitTextToSize(warning,W-M*2),M,y);
+  doc.setTextColor(80,90,104);doc.setFontSize(8);doc.text('Elaborazione: '+new Date().toLocaleDateString('it-IT')+'',M,286);
+  doc.save('EnergyBroker_Simulazione_'+x.o.name.replace(/[^a-z0-9_-]/gi,'_').slice(0,40)+'.pdf');
+  message('quotePdfStatus','PDF preliminare generato: controllalo prima di qualsiasi condivisione.');
+ }catch(e){message('quotePdfStatus','Errore: '+e.message,true)}finally{button.disabled=false}
 };
 function loadTerms(){
  const o=offers.find(x=>x.id===$('termsOffer').value),t=o?.terms||{};
@@ -189,7 +340,8 @@ $('termsSupplier').onchange=()=>filterTerms();
 $('termsOffer').onchange=loadTerms;
 async function refresh(){
  try{
-  const [s,o]=await Promise.all([api('/rest/v1/suppliers?select=id,name&order=name.asc&limit=100'),api('/rest/v1/offers?select=id,supplier_id,name,commodity,segment,pricing,status,terms,valid_from,valid_until&order=name.asc&limit=500')]);
+  const [s,o,cs]=await Promise.all([api('/rest/v1/suppliers?select=id,name&order=name.asc&limit=100'),api('/rest/v1/offers?select=id,supplier_id,name,commodity,segment,pricing,status,terms,valid_from,valid_until&order=name.asc&limit=500'),api('/rest/v1/commissions?select=offer_id,terms&limit=500')]);
+  commissions=cs;
   suppliers=s;offers=o;list('suppliers',s,x=>x.name);list('offers',o,x=>(s.find(a=>a.id===x.supplier_id)?.name||'')+' · '+x.name+' · '+x.status);
   let old=$('termsSupplier').value,offer=$('termsOffer').value;
   options('offerSupplier',s,x=>x.name,$('offerSupplier').value);
