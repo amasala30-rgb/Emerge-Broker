@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src https://cgcplqcngpslommukoxd.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
-<title>Energy Broker 1.6</title>
+<title>Energy Broker 1.7</title>
 <style>:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;padding:20px;min-height:100vh;display:grid;place-items:center}.shell{width:min(100%,680px)}.panel{background:#192538;border:1px solid #334155;border-radius:18px;padding:22px}h1{margin:0}h2{font-size:1.2rem}label{display:block;margin:14px 0 5px}input,select,textarea{width:100%;padding:12px;border-radius:9px;background:#0d1726;color:#fff;border:1px solid #52647b;font-size:1rem}button{border:0;border-radius:9px;background:#4f95e9;color:#071321;padding:12px 16px;margin-top:15px;font-size:1rem;font-weight:650}button:disabled{opacity:.5}.secondary{background:#304158;color:white}.muted{color:#aabbd2}.small{font-size:.87rem}.hidden{display:none!important}.section{margin-top:24px}.notice{border-left:3px solid #f4c16a;padding:10px 12px;color:#e7d6aa;background:#252d3b}.item{padding:10px 0;border-top:1px solid #35455b}.good{color:#a4e7bd}.error{color:#ffb5b5}.status{white-space:pre-wrap;margin-top:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}summary{padding:12px 0;font-weight:700;cursor:pointer}details{border-bottom:1px solid #35455b}code{font-size:.9em}</style></head>
-<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.6 · lettura corretta e indice</span></div><p class="muted small">Area riservata · Archivio privato</p>
+<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.7 · importazione ChatGPT</span></div><p class="muted small">Area riservata · Archivio privato</p>
 <div id="login"><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button type="submit">Accedi</button></form><div id="loginStatus" class="status"></div></div>
 <div id="app" class="hidden"><div class="row"><strong id="who"></strong><button id="logout" class="secondary">Esci</button></div>
 <div class="section"><h2>Acquisisci bolletta</h2>
@@ -12,6 +12,7 @@
 <label>Oppure scegli foto o PDF esistente</label><input id="billFile" type="file" accept="image/*,application/pdf">
 <div id="billSelected" class="muted small"></div>
 <button id="billRead" type="button">Leggi dati dal documento</button><div id="billOcrStatus" class="status" aria-live="polite"></div>
+<details class="section"><summary>Importa dati letti da ChatGPT (gratuito)</summary><p class="notice small">Invia la bolletta nella conversazione ChatGPT e chiedi il file JSON per Energy Broker. Scarica il JSON sul telefono e selezionalo qui. Nessuna API AI è collegata all’app: il file viene letto localmente. Verifica i dati prima di utilizzarli.</p><label>File JSON preparato da ChatGPT</label><input id="chatgptImportFile" type="file" accept=".json,application/json"><button id="chatgptImportButton" type="button" class="secondary">Importa e compila i campi</button><div id="chatgptImportStatus" class="status" aria-live="polite"></div></details>
 <label>Fornitore attuale</label><input id="billSupplier" placeholder="Controlla e correggi">
 <label>POD / PDR</label><input id="billPoint" placeholder="Controlla e correggi">
 <label>Consumo fatturato nel periodo (kWh o Smc)</label><input id="billPeriodConsumption" type="number" min="0" step="any" inputmode="decimal"><label>Consumi per fascia F1 / F2 / F3 (kWh, se presenti)</label><div class="row"><input id="billF1" type="number" min="0" step="any" placeholder="F1" style="flex:1;min-width:80px"><input id="billF2" type="number" min="0" step="any" placeholder="F2" style="flex:1;min-width:80px"><input id="billF3" type="number" min="0" step="any" placeholder="F3" style="flex:1;min-width:80px"></div><label>Consumo annuo (kWh o Smc)</label><input id="billConsumption" type="number" min="0" step="any" inputmode="decimal">
@@ -199,6 +200,48 @@ $('billPdf').onclick=async()=>{
  finally{button.disabled=false}
 };
 
+// Importazione locale: JSON strutturato e verificato, nessun invio di dati a terzi.
+$('chatgptImportButton').onclick=async()=>{
+ const file=$('chatgptImportFile').files[0];
+ if(!file){message('chatgptImportStatus','Seleziona prima il file JSON.',true);return}
+ if(file.size>100000){message('chatgptImportStatus','Il JSON è troppo grande (massimo 100 KB).',true);return}
+ try{
+  const data=JSON.parse(await file.text());
+  if(!data||typeof data!=='object'||Array.isArray(data)||data.schema!=='energy-broker-bill-v1')throw Error('Formato non riconosciuto. Serve schema: energy-broker-bill-v1');
+  const fields={supplier:'billSupplier',point:'billPoint',annual_consumption:'billConsumption',period_consumption:'billPeriodConsumption',f1:'billF1',f2:'billF2',f3:'billF3',bill_total:'billTotal',amount_due:'billPayable',tv_fee:'billTV',unit_price:'billUnitPrice',period:'billPeriod',notes:'billText'};
+  const parsed={};let count=0;
+  for(const [key,id] of Object.entries(fields)){
+   const value=data[key];if(value===undefined||value===null||value==='')continue;
+   if(['supplier','point','period','notes'].includes(key)){
+    if(typeof value!=='string'||value.length>5000)throw Error('Testo non valido: '+key);
+    parsed[id]=value.trim();
+   }else{
+    const n=typeof value==='number'?value:Number(String(value).replace(/\s/g,'').replace(',','.'));
+    if(!Number.isFinite(n)||n<0||n>100000000)throw Error('Numero non valido: '+key);
+    parsed[id]=String(n);
+   }count++;
+  }
+  const commodity=data.commodity;
+  if(commodity!==undefined&&commodity!=='electricity'&&commodity!=='gas')throw Error('Fornitura non valida');
+  if(data.index_type!==undefined&&!['PUN','PSV','TTF',null,''].includes(data.index_type))throw Error('Indice non valido');
+  let indexValue=null;
+  if(data.index_value!==undefined&&data.index_value!==null&&data.index_value!==''){
+   indexValue=Number(String(data.index_value).replace(',','.'));
+   if(!Number.isFinite(indexValue)||indexValue<=0||indexValue>100)throw Error('Valore indice non valido');
+  }
+  if(!count)throw Error('Il file non contiene dati da importare');
+  const preview=Object.entries(parsed).map(([id,value])=>$(id).previousElementSibling?.textContent?.trim()+': '+value).slice(0,12).join('\n');
+  if(!confirm('Importare '+count+' campi da ChatGPT? I valori presenti saranno sostituiti.\n\n'+preview.slice(0,1400)))return;
+  for(const [id,value] of Object.entries(parsed))$(id).value=value;
+  if(commodity)$('compareCommodity').value=commodity;
+  if(data.index_type)$('compareIndexType').value=data.index_type;
+  if(indexValue!==null)$('compareIndex').value=String(indexValue);
+  if(parsed.billConsumption)$('compareConsumption').value=parsed.billConsumption;
+  $('indexStatus').textContent='Dati indice importati da ChatGPT: verifica fonte, periodo e unità prima del confronto.';
+  selectedQuote=null;$('selectedOffer').classList.add('hidden');$('compareResults').textContent='Dati importati: ricalcola le offerte dopo la verifica.';
+  message('chatgptImportStatus','Importati '+count+' campi. Controlla i valori sulla bolletta. Il costo annuo attuale confrontabile NON viene dedotto dal totale della bolletta.');
+ }catch(e){message('chatgptImportStatus','Importazione non riuscita: '+e.message,true)}
+};
 $('billUse').onclick=()=>{
  const value=Number($('billConsumption').value.replace(',','.'));
  if(!Number.isFinite(value)||value<=0){message('billSaveStatus','Inserisci prima un consumo annuo valido',true);return}
