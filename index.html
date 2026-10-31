@@ -30,9 +30,9 @@
 <label>Consumo annuo (kWh o Smc)</label><input id="compareConsumption" type="number" min="1" step="any" inputmode="decimal">
 <label>Indice di riferimento</label><select id="compareIndexType"><option value="">Seleziona indice</option><option value="PUN">PUN</option><option value="PSV">PSV</option><option value="TTF">TTF</option></select>
 <label>Costo annuo attuale CONFRONTABILE (€)</label><input id="compareBaseline" type="number" min="0" step="any" placeholder="Solo energia + quota commerciale, su 12 mesi">
-<p class="notice small">Confronto interno: fino a tre proposte convenienti, con provvigioni alta, media e più contenuta. Inserire il costo attuale ricostruito sulle stesse componenti; non usare il totale della bolletta mensile. Nessuna provvigione compare nel PDF cliente.</p>
+<p class="notice small">Confronto interno: fino a tre offerte ordinate dal costo commerciale annuo stimato più basso, indipendentemente dalla provvigione. Inserire il costo attuale ricostruito sulle stesse componenti; non usare il totale della bolletta mensile. Nessuna provvigione compare nel PDF cliente.</p>
 <label>Valore indice del periodo (€/kWh o €/Smc)</label><input id="compareIndex" type="number" min="0" step="any" inputmode="decimal" placeholder="Da verificare: PUN/PSV del periodo"><p id="indexStatus" class="notice small">Il PUN/PSV non è un dato ricavabile automaticamente dal solo nome dell’indice. Se la bolletta non ne riporta il valore, va recuperato da una fonte ufficiale prima del confronto.</p>
-<label><input id="comparePreliminary" type="checkbox" style="width:auto"> Includi CTE da confermare (simulazione non verificata)</label><button id="compareRun">Trova le proposte convenienti</button><div id="compareResults" class="status"></div><div id="selectedOffer" class="hidden section"><h3>Offerta selezionata</h3><div id="selectedOfferSummary" class="notice"></div><button id="quotePdf" type="button">Genera PDF cliente · simulazione</button><div id="quotePdfStatus" class="status"></div></div></div>
+<label><input id="comparePreliminary" type="checkbox" style="width:auto"> Includi CTE da confermare (simulazione non verificata)</label><button id="compareRun">Trova le 3 offerte migliori</button><div id="compareResults" class="status"></div><div id="selectedOffer" class="hidden section"><h3>Offerta selezionata</h3><div id="selectedOfferSummary" class="notice"></div><button id="quotePdf" type="button">Genera PDF cliente · simulazione</button><div id="quotePdfStatus" class="status"></div></div></div>
 <details class="section"><summary>Fornitori · elenco e gestione</summary><div id="suppliers"></div><form id="supplierForm"><label>Nuovo fornitore</label><input id="supplierName" required maxlength="120"><button>Aggiungi fornitore</button></form><div id="supplierStatus" class="status"></div></details>
 <details class="section"><summary>Elenco completo offerte</summary><div id="offers"></div></details>
 <details class="section"><summary>Aggiungi offerta preliminare</summary><form id="offerForm"><label>Fornitore</label><select id="offerSupplier"></select><label>Nome offerta</label><input id="offerName" required maxlength="180"><label>Fornitura</label><select id="commodity"><option value="electricity">Luce</option><option value="gas">Gas</option></select><label>Cliente</label><select id="segment"><option value="domestic">Domestico</option><option value="business">Business</option><option value="condominium">Condominio</option></select><label>Prezzo</label><select id="pricing"><option value="indexed">Variabile</option><option value="fixed">Fisso</option><option value="mixed">Misto</option></select><button>Salva offerta non verificata</button></form><div id="offerStatusMessage" class="status"></div></details>
@@ -311,43 +311,22 @@ $('compareRun').onclick=()=>{
   const commission=ct.acquisition_eur!==undefined&&ct.acquisition_eur!==null&&Number.isFinite(comm)&&comm>=0?comm:null;
   return {...x,commission,commissionStatus:ct.status||'non disponibile',saving:hasBase?base-x.cost:null};
  });
- const eligible=enriched.filter(x=>hasBase&&x.saving>0);
- // Tre profili distinti: massima provvigione, acquisizione e compromesso.
- // Se non ci sono candidati sufficienti si visualizzano solo quelli disponibili.
- const commissionCandidates=eligible.filter(x=>x.commission!==null);
- const byCommission=[...commissionCandidates].sort((a,b)=>b.commission-a.commission||b.saving-a.saving);
- const most=byCommission[0]||null;
- const acquisitionPool=commissionCandidates.filter(x=>x.o.id!==most?.o.id&&x.commission<most.commission);
- const acquisition=[...acquisitionPool].sort((a,b)=>b.saving-a.saving||b.commission-a.commission)[0]||null;
- const balancePool=commissionCandidates.filter(x=>x.o.id!==most?.o.id&&x.o.id!==acquisition?.o.id);
- let middle=null;
- if(balancePool.length){
-  const minC=Math.min(...commissionCandidates.map(x=>x.commission)),maxC=Math.max(...commissionCandidates.map(x=>x.commission));
-  const minS=Math.min(...commissionCandidates.map(x=>x.saving)),maxS=Math.max(...commissionCandidates.map(x=>x.saving));
-  middle=[...balancePool].sort((a,b)=>{
-   const score=x=>0.5*((x.commission-minC)/(maxC-minC||1))+0.5*((x.saving-minS)/(maxS-minS||1));
-   return score(b)-score(a);
-  })[0];
- }
- const chosen=[];
- for(const [label,x] of [['Acquisizione · più risparmio',acquisition],['Equilibrio · compromesso',middle],['Redditività · provvigione massima',most]]){
-  if(x&&!chosen.some(y=>y.x.o.id===x.o.id))chosen.push({label,x});
- }
- // Ripiego: offerte con provvigione nota, non duplicate, sempre convenienti.
- for(const x of byCommission){if(chosen.length>=3)break;if(!chosen.some(y=>y.x.o.id===x.o.id))chosen.push({label:'Alternativa conveniente',x})}
+ // Le tre offerte con il costo commerciale stimato piu basso, indipendentemente dalla provvigione.
+ // Non presentare come risparmio un confronto privo di base omogenea.
+ const chosen=[...enriched].filter(x=>Number.isFinite(x.cost)&&x.cost>=0).sort((a,b)=>a.cost-b.cost).slice(0,3).map((x,i)=>({label:'Offerta '+(i+1)+' · costo stimato più basso',x}));
  selectedQuote=null;$('selectedOffer').classList.add('hidden');
  const p=document.createElement('p');p.className='notice small';
- p.textContent=!hasBase?'Inserisci il costo annuo attuale calcolato con le STESSE componenti (energia + quota commerciale). Non usare il totale della bolletta.':!eligible.length?'Nessuna offerta più economica sul perimetro confrontato.':!commissionCandidates.length?'Le offerte convenienti non hanno provvigioni di acquisizione numeriche registrate.':'Trovate '+chosen.length+' proposte selezionabili su '+eligible.length+' offerte preliminarmente convenienti. Il confronto riguarda SOLO energia + quota commerciale, non il totale della bolletta.';
+ p.textContent=!chosen.length?'Nessuna offerta confrontabile con i dati attuali. Controlla segmento, consumo, indice e condizioni delle CTE.':!hasBase?'Ecco le '+chosen.length+' offerte con costo commerciale annuo stimato più basso. Inserisci il costo annuo attuale confrontabile per calcolare il risparmio e generare il PDF cliente. Non usare il totale della bolletta.':'Mostrate le '+chosen.length+' offerte con costo commerciale annuo stimato più basso su '+enriched.length+' confrontabili. Il risparmio riguarda SOLO energia + quota commerciale; un valore negativo indica un costo maggiore dell’attuale.';
  root.append(p);
  const money=x=>x.toLocaleString('it-IT',{style:'currency',currency:'EUR'});
  for(const {label,x} of chosen){
   const d=document.createElement('div');d.className='item';d.style.cssText='padding:15px;margin:10px 0;border:1px solid #47617d;border-radius:12px;background:#1b3045';
   const h=document.createElement('strong');h.textContent=label+' · '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name;d.append(h);
-  const info=document.createElement('p');info.textContent='Costo commerciale annuo stimato: '+money(x.cost)+' · Risparmio stimato: '+money(x.saving)+' ('+(100*x.saving/base).toFixed(2)+'%) · TUA PROVVIGIONE: '+money(x.commission);d.append(info);
+  const info=document.createElement('p');info.textContent='Costo commerciale annuo stimato: '+money(x.cost)+(hasBase?' · '+(x.saving>=0?'Risparmio':'Maggior costo')+' stimato: '+money(Math.abs(x.saving))+' ('+(100*Math.abs(x.saving)/base).toFixed(2)+'%)':' · Risparmio: da calcolare')+' · TUA PROVVIGIONE: '+(x.commission===null?'non disponibile':money(x.commission));d.append(info);
   const status=document.createElement('p');status.className='notice small';status.textContent='CTE: '+x.o.status+' · Provvigione: '+x.commissionStatus+' · Dati non verificati: non usare come preventivo definitivo.';d.append(status);
-  const b=document.createElement('button');b.type='button';b.textContent='Seleziona questa offerta';b.onclick=()=>{
+  const b=document.createElement('button');b.type='button';b.textContent=hasBase?'Seleziona questa offerta':'Inserisci il costo attuale per selezionare';b.disabled=!hasBase;b.onclick=()=>{
    selectedQuote={...x,base,consumption:q,index:ix,indexType:$('compareIndexType').value,commodity:$('compareCommodity').value,period:$('billPeriod').value.trim(),supplierCurrent:$('billSupplier').value.trim(),point:$('billPoint').value.trim(),selectedAt:new Date().toISOString()};
-   $('selectedOffer').classList.remove('hidden');$('selectedOfferSummary').textContent='Hai scelto '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name+' | Risparmio commerciale stimato '+money(x.saving)+'/anno | Tua provvigione '+money(x.commission)+' (NON presente nel PDF). Conferma con il pulsante qui sotto.';
+   $('selectedOffer').classList.remove('hidden');$('selectedOfferSummary').textContent='Hai scelto '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name+' | '+(x.saving>=0?'Risparmio':'Maggior costo')+' commerciale stimato '+money(Math.abs(x.saving))+'/anno | Tua provvigione '+(x.commission===null?'non disponibile':money(x.commission))+' (NON presente nel PDF). Conferma con il pulsante qui sotto.';
    message('quotePdfStatus','');$('selectedOffer').scrollIntoView({behavior:'smooth',block:'nearest'});
   };d.append(b);root.append(d);
  }
