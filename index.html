@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src https://cgcplqcngpslommukoxd.supabase.co https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
-<title>Energy Broker 1.7</title>
+<title>Energy Broker 1.9</title>
 <style>:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#101827;color:#eaf0fa}*{box-sizing:border-box}body{margin:0;padding:20px;min-height:100vh;display:grid;place-items:center}.shell{width:min(100%,680px)}.panel{background:#192538;border:1px solid #334155;border-radius:18px;padding:22px}h1{margin:0}h2{font-size:1.2rem}label{display:block;margin:14px 0 5px}input,select,textarea{width:100%;padding:12px;border-radius:9px;background:#0d1726;color:#fff;border:1px solid #52647b;font-size:1rem}button{border:0;border-radius:9px;background:#4f95e9;color:#071321;padding:12px 16px;margin-top:15px;font-size:1rem;font-weight:650}button:disabled{opacity:.5}.secondary{background:#304158;color:white}.muted{color:#aabbd2}.small{font-size:.87rem}.hidden{display:none!important}.section{margin-top:24px}.notice{border-left:3px solid #f4c16a;padding:10px 12px;color:#e7d6aa;background:#252d3b}.item{padding:10px 0;border-top:1px solid #35455b}.good{color:#a4e7bd}.error{color:#ffb5b5}.status{white-space:pre-wrap;margin-top:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}summary{padding:12px 0;font-weight:700;cursor:pointer}details{border-bottom:1px solid #35455b}code{font-size:.9em}</style></head>
-<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 1.7 · importazione ChatGPT</span></div><p class="muted small">Area riservata · Archivio privato</p>
+<body><main class="shell"><section class="panel"><div class="row"><h1>Energy Broker</h1><span class="muted small">Versione 2.0 · solo offerte verificate</span></div><p class="muted small">Area riservata · Archivio privato</p>
 <div id="login"><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button type="submit">Accedi</button></form><div id="loginStatus" class="status"></div></div>
 <div id="app" class="hidden"><div class="row"><strong id="who"></strong><button id="logout" class="secondary">Esci</button></div>
 <div class="section"><h2>Acquisisci bolletta</h2>
@@ -32,7 +32,7 @@
 <label>Costo annuo attuale CONFRONTABILE (€)</label><input id="compareBaseline" type="number" min="0" step="any" placeholder="Solo energia + quota commerciale, su 12 mesi">
 <p class="notice small">Confronto interno: fino a tre offerte ordinate dal costo commerciale annuo stimato più basso, indipendentemente dalla provvigione. Inserire il costo attuale ricostruito sulle stesse componenti; non usare il totale della bolletta mensile. Nessuna provvigione compare nel PDF cliente.</p>
 <label>Valore indice del periodo (€/kWh o €/Smc)</label><input id="compareIndex" type="number" min="0" step="any" inputmode="decimal" placeholder="Da verificare: PUN/PSV del periodo"><p id="indexStatus" class="notice small">Il PUN/PSV non è un dato ricavabile automaticamente dal solo nome dell’indice. Se la bolletta non ne riporta il valore, va recuperato da una fonte ufficiale prima del confronto.</p>
-<label><input id="comparePreliminary" type="checkbox" style="width:auto"> Includi CTE da confermare (simulazione non verificata)</label><button id="compareRun">Trova le 3 offerte migliori</button><div id="compareResults" class="status"></div><div id="selectedOffer" class="hidden section"><h3>Offerta selezionata</h3><div id="selectedOfferSummary" class="notice"></div><button id="quotePdf" type="button">Genera PDF cliente · simulazione</button><div id="quotePdfStatus" class="status"></div></div></div>
+<p class="notice small">Confronto limitato alle CTE verificate e con dati tariffari completi. Le offerte escluse non vengono proposte al cliente.</p><button id="compareRun">Trova le 3 offerte migliori</button><div id="compareResults" class="status"></div><div id="selectedOffer" class="hidden section"><h3>Offerta selezionata</h3><div id="selectedOfferSummary" class="notice"></div><button id="quotePdf" type="button">Genera PDF cliente · simulazione</button><div id="quotePdfStatus" class="status"></div></div></div>
 <details class="section"><summary>Fornitori · elenco e gestione</summary><div id="suppliers"></div><form id="supplierForm"><label>Nuovo fornitore</label><input id="supplierName" required maxlength="120"><button>Aggiungi fornitore</button></form><div id="supplierStatus" class="status"></div></details>
 <details class="section"><summary>Elenco completo offerte</summary><div id="offers"></div></details>
 <details class="section"><summary>Aggiungi offerta preliminare</summary><form id="offerForm"><label>Fornitore</label><select id="offerSupplier"></select><label>Nome offerta</label><input id="offerName" required maxlength="180"><label>Fornitura</label><select id="commodity"><option value="electricity">Luce</option><option value="gas">Gas</option></select><label>Cliente</label><select id="segment"><option value="domestic">Domestico</option><option value="business">Business</option><option value="condominium">Condominio</option></select><label>Prezzo</label><select id="pricing"><option value="indexed">Variabile</option><option value="fixed">Fisso</option><option value="mixed">Misto</option></select><button>Salva offerta non verificata</button></form><div id="offerStatusMessage" class="status"></div></details>
@@ -272,9 +272,10 @@ function list(id,rows,fn){$(id).replaceChildren();for(const row of rows){const p
 function options(id,rows,label,keep){$(id).replaceChildren();for(const x of rows){let o=document.createElement('option');o.value=x.id;o.textContent=label(x);$(id).append(o)}if(rows.some(x=>x.id===keep))$(id).value=keep}
 function eligibility(o){
  const t=o.terms||{},today=new Date().toISOString().slice(0,10);
- if(o.status!=='verified' && !(o.status==='to_confirm' && $('comparePreliminary').checked))return 'CTE non verificata';
+ if(o.status!=='verified')return 'CTE non verificata';
  if(o.status==='superseded'||o.status==='withdrawn')return 'CTE sostituita o ritirata';
  if(o.valid_from&&o.valid_from>today)return 'Validità futura';
+ if(o.valid_until&&o.valid_until<today)return 'CTE scaduta';
  if(t.historical_only||t.expired||t.spread_to_be_filled)return 'CTE storica o incompleta';
  if(t.additional_charges_require_review||t.requires_full_terms_review||t.additional_charges||t.free4you_eur_year!==undefined||t.summary_prices_not_necessarily_commodity_only||t.network_losses||t.losses_bt||t.losses_mt||t.discounts_conditional||t.cap_formula||t.cap_eur_kwh!==undefined)return 'Formula o costi da verificare';
  if(o.pricing==='indexed'){
@@ -301,7 +302,7 @@ $('compareRun').onclick=()=>{
   const reason=eligibility(o);if(reason){excluded[reason]=(excluded[reason]||0)+1;continue}
   const t=o.terms||{},p=o.pricing==='fixed'?Number(t.fixed_price_eur_kwh??t.fixed_price_eur_smc??t.fixed_price):(ix===''?NaN:idx+Number(t.spread_eur_kwh??t.spread_eur_smc??t.spread));
   if(!Number.isFinite(p)||p<0){excluded['Indice mancante o non valido']=(excluded['Indice mancante o non valido']||0)+1;continue}
-  valid.push({o,cost:q*p+Number(t.fixed_eur_year??t.annual_fee)});
+  const cost=q*p+Number(t.fixed_eur_year??t.annual_fee);if(!Number.isFinite(cost)||cost<0){excluded['Costo annuo non valido']=(excluded['Costo annuo non valido']||0)+1;continue}valid.push({o,cost});
  }
  const raw=$('compareBaseline').value.trim(),base=raw===''?NaN:Number(raw);
  const hasBase=Number.isFinite(base)&&base>0;
@@ -318,12 +319,49 @@ $('compareRun').onclick=()=>{
  const p=document.createElement('p');p.className='notice small';
  p.textContent=!chosen.length?'Nessuna offerta confrontabile con i dati attuali. Controlla segmento, consumo, indice e condizioni delle CTE.':!hasBase?'Ecco le '+chosen.length+' offerte con costo commerciale annuo stimato più basso. Inserisci il costo annuo attuale confrontabile per calcolare il risparmio e generare il PDF cliente. Non usare il totale della bolletta.':'Mostrate le '+chosen.length+' offerte con costo commerciale annuo stimato più basso su '+enriched.length+' confrontabili. Il risparmio riguarda SOLO energia + quota commerciale; un valore negativo indica un costo maggiore dell’attuale.';
  root.append(p);
+ // Diagnosi trasparente: non inventare prezzi e non ignorare vincoli contrattuali.
+ const diagnostic=document.createElement('details');diagnostic.className='section';
+ const diagTitle=document.createElement('summary');diagTitle.textContent='Elenco offerte incluse ed escluse · '+valid.length+' incluse, '+(subset.length-valid.length)+' escluse';diagnostic.append(diagTitle);
+ const help=document.createElement('p');help.className='notice small';help.textContent='Per sbloccare un’offerta occorre completare e verificare la CTE originale: formula di prezzo, quota annua, eventuali costi aggiuntivi, validità e segmento. Lo stato “Verificata” va impostato soltanto dopo controllo del documento. Non usare il totale della bolletta come costo commerciale.';diagnostic.append(help);
+ if(!subset.length){const empty=document.createElement('p');empty.textContent='Nessuna offerta per la fornitura e il tipo di cliente selezionati. Controlla le opzioni o importa CTE di quel segmento.';diagnostic.append(empty)}
+ const includedSection=document.createElement('details');
+ const includedTitle=document.createElement('summary');includedTitle.textContent='INCLUSE · '+valid.length+' offerte verificate e confrontabili';includedSection.append(includedTitle);
+ if(!valid.length){const empty=document.createElement('p');empty.className='notice small';empty.textContent='Nessuna offerta verificata e confrontabile per i parametri selezionati.';includedSection.append(empty)}
+ const includedMoney=n=>n.toLocaleString('it-IT',{style:'currency',currency:'EUR'});
+ for(const x of [...valid].sort((a,b)=>a.cost-b.cost)){
+  const row=document.createElement('p');row.className='muted small';
+  const supplier=suppliers.find(s=>s.id===x.o.supplier_id)?.name||'Fornitore non indicato';
+  row.textContent=supplier+' · '+x.o.name+' · costo commerciale stimato '+includedMoney(x.cost)+'/anno · CTE verificata';
+  includedSection.append(row);
+ }
+ diagnostic.append(includedSection);
+ const counts=document.createElement('p');counts.className='muted small';counts.textContent='Motivi esclusione: '+(Object.entries(excluded).map(([k,v])=>k+' ('+v+')').join('; ')||'nessuno');diagnostic.append(counts);
+ const byReason={};
+ for(const o of subset){
+  let reason=eligibility(o);
+  if(!reason){const t=o.terms||{},v=o.pricing==='fixed'?Number(t.fixed_price_eur_kwh??t.fixed_price_eur_smc??t.fixed_price):(ix===''?NaN:idx+Number(t.spread_eur_kwh??t.spread_eur_smc??t.spread));if(!Number.isFinite(v)||v<0)reason='Indice mancante o non valido';else if(!Number.isFinite(q*v+Number(t.fixed_eur_year??t.annual_fee))||q*v+Number(t.fixed_eur_year??t.annual_fee)<0)reason='Costo annuo non valido'}
+  if(!reason)continue;
+  (byReason[reason]??=[]).push(o);
+ }
+ for(const [reason,items] of Object.entries(byReason)){
+  const section=document.createElement('details');
+  const heading=document.createElement('summary');heading.textContent=reason+' · '+items.length+' offerte';section.append(heading);
+  for(const o of items){
+   const row=document.createElement('p');row.className='muted small';
+   const supplier=suppliers.find(s=>s.id===o.supplier_id)?.name||'Fornitore non indicato';
+   row.textContent=supplier+' · '+o.name+' · '+(o.pricing==='indexed'?'variabile':o.pricing==='fixed'?'fissa':'mista')+' · stato: '+o.status;
+   section.append(row);
+  }
+  diagnostic.append(section);
+ }
+ diagnostic.open=true;
+ root.append(diagnostic);
  const money=x=>x.toLocaleString('it-IT',{style:'currency',currency:'EUR'});
  for(const {label,x} of chosen){
   const d=document.createElement('div');d.className='item';d.style.cssText='padding:15px;margin:10px 0;border:1px solid #47617d;border-radius:12px;background:#1b3045';
   const h=document.createElement('strong');h.textContent=label+' · '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name;d.append(h);
   const info=document.createElement('p');info.textContent='Costo commerciale annuo stimato: '+money(x.cost)+(hasBase?' · '+(x.saving>=0?'Risparmio':'Maggior costo')+' stimato: '+money(Math.abs(x.saving))+' ('+(100*Math.abs(x.saving)/base).toFixed(2)+'%)':' · Risparmio: da calcolare')+' · TUA PROVVIGIONE: '+(x.commission===null?'non disponibile':money(x.commission));d.append(info);
-  const status=document.createElement('p');status.className='notice small';status.textContent='CTE: '+x.o.status+' · Provvigione: '+x.commissionStatus+' · Dati non verificati: non usare come preventivo definitivo.';d.append(status);
+  const status=document.createElement('p');status.className='notice small';status.textContent='CTE: verificata · Provvigione: '+x.commissionStatus+' · Simulazione economica parziale: verificare le condizioni contrattuali prima della proposta definitiva.';d.append(status);
   const b=document.createElement('button');b.type='button';b.textContent=hasBase?'Seleziona questa offerta':'Inserisci il costo attuale per selezionare';b.disabled=!hasBase;b.onclick=()=>{
    selectedQuote={...x,base,consumption:q,index:ix,indexType:$('compareIndexType').value,commodity:$('compareCommodity').value,period:$('billPeriod').value.trim(),supplierCurrent:$('billSupplier').value.trim(),point:$('billPoint').value.trim(),selectedAt:new Date().toISOString()};
    $('selectedOffer').classList.remove('hidden');$('selectedOfferSummary').textContent='Hai scelto '+(suppliers.find(s=>s.id===x.o.supplier_id)?.name||'')+' · '+x.o.name+' | '+(x.saving>=0?'Risparmio':'Maggior costo')+' commerciale stimato '+money(Math.abs(x.saving))+'/anno | Tua provvigione '+(x.commission===null?'non disponibile':money(x.commission))+' (NON presente nel PDF). Conferma con il pulsante qui sotto.';
@@ -333,7 +371,7 @@ $('compareRun').onclick=()=>{
  const excludedText=Object.entries(excluded).map(([k,v])=>k+' '+v).join('; ')||'nessuna';
  const foot=document.createElement('p');foot.className='muted small';foot.textContent='Escluse per condizioni: '+excludedText+'. Mancano imposte, oneri, trasporto, eventuali perdite e condizioni particolari. Le CTE non sostituite vanno comunque verificate rispetto ai documenti del fornitore.';root.append(foot);
 };
-for(const id of ['compareCommodity','compareSegment','compareConsumption','compareIndexType','compareBaseline','compareIndex','comparePreliminary']){ $(id).addEventListener('change',()=>{selectedQuote=null;$('selectedOffer').classList.add('hidden');$('compareResults').textContent='Parametri modificati: ricalcola le offerte.'}) }
+for(const id of ['compareCommodity','compareSegment','compareConsumption','compareIndexType','compareBaseline','compareIndex']){ $(id).addEventListener('change',()=>{selectedQuote=null;$('selectedOffer').classList.add('hidden');$('compareResults').textContent='Parametri modificati: ricalcola le offerte.'}) }
 $('quotePdf').onclick=async()=>{
  const x=selectedQuote;
  if(!x){message('quotePdfStatus','Seleziona prima un’offerta.',true);return}
